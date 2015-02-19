@@ -1,5 +1,8 @@
 # Cellophane
+
 Tools for manipulating cell expression format (CEF and CEB) files
+
+**Note: Cellophane is not yet ready for use, nor do I know when it will be**
 
 ## Overview
 
