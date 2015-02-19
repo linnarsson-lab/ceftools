@@ -16,7 +16,7 @@ Cellophane works with binary files in CEB format ('cell expression binary', `.ce
 converted to and from the text-based CEF format ('cell expression format', `.cef`) suitable for human consumption. CEF files are tab-delimited 
 text files that can be easily parsed or imported into e.g. Excel. 
 
-## Synposis
+## Synopsis
 
 ```
 cef info            - overview of file contents
