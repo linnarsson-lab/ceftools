@@ -33,11 +33,12 @@ cef normalize		- normalize rows
 cef sort			- sort by attribute or column value, or by correlation
 cef aggregate		- calculate aggregate statistics for every row
 cef view			- print parts of the matrix
-cef import			- import a .cef file and output a .ceb file
-cef export			- read a .ceb file and export a .cef
-cef validate		- validate a .cef or .ceb file 
+```
 
-cef A : B           - pipe command A into command B (internal pipe)
+Commands operate on rows. For example `remove` can be used to remove row attributes, but not column attributes. If you want to operate on columns, you must first transpose the file (use pipes to avoid storing the intermediate files). For example:
+
+```
+cef transpose | cef remove Age | cef transpose < <infile.ceb> > <outfile.ceb>  
 ```
 
 
