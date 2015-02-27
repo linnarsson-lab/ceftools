@@ -41,9 +41,9 @@ cef A : B           - pipe command A into command B (internal pipe)
 ```
 
 
-# CEF and CEB file formats
+## CEF and CEB file formats
 
-## Detecting the file format
+### Detecting the file format
 
 CEF files are tab-delimited text files in UTF-8 encoding. The first four characters are 'CEF\t' (that's a single tab character at then end), equivalent to the hexadecimal 4-byte number 0x43454609. There is no byte order mark (BOM).
 
@@ -52,7 +52,7 @@ CEB files are binary. The first four bytes are UTF-8 encoded 'CEB\t' (that's a s
 The first four bytes of a file therefore unambiguously indicate if it's a CEF or CEB file (assuming it is know to be one of the two).
 
 
-# CEF file format
+### CEF file format
 
 Tab-delimited file, UTF-8 encoding, no BOM
 Header line starting with 'CEF' and followed by row attribute count, column attribute count, row count and column count
@@ -62,6 +62,7 @@ Row attributes and values
 
 Example of a file with 4 Row Attributes, 2 Column Attributes, 345 Rows, 123 Columns
 
+|   |   |   |   |    |    |    |
 |---|---|---|---|----|----|----|
 |CEF| 4 | 2 |345|123 |    |    |
 |	|	|	|   |Ca1 |Cv11|Cv12|
@@ -71,7 +72,7 @@ Example of a file with 4 Row Attributes, 2 Column Attributes, 345 Rows, 123 Colu
 
 
 
-# CEB file format
+### CEB file format
 
 Binary file, little endian
 
