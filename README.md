@@ -24,7 +24,6 @@ text files that can be easily parsed or imported into e.g. Excel.
 ```
 cef info            - overview of file contents
 cef transpose	  	- transpose rows and columns
-cef T               - transpose rows and columns (synonym for 'transpose')
 cef join		  	- join two datasets by given identifier
 cef remove 			- remove attribute
 cef annotate        - insert attribute from file
