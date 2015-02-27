@@ -38,7 +38,7 @@ cef view			- print parts of the matrix
 Commands operate on rows. For example `remove` can be used to remove row attributes, but not column attributes. If you want to operate on columns, you must first transpose the file (use pipes to avoid storing the intermediate files). For example:
 
 ```
-cef transpose | cef remove Age | cef transpose < *infile.ceb* > *outfile.ceb* 
+cef transpose | cef remove Age | cef transpose < infile.ceb > outfile.ceb 
 ```
 
 
