@@ -10,8 +10,8 @@ import (
 func main() {
 	// Define the command-line structure using Kingpin
 	var app = kingpin.New("cef", "Cellophane v0.1 (C) 2015 Sten Linnarsson <http://linnarssonlab.org/>")
-	var app_input = app.Flag("input", "Name of file to use as input (default: use STDIN)").String()
-	var app_output = app.Flag("output", "Name of file to use as output (default: use STDOUT)").String()
+	var app_input = app.Flag("input", "Name of file to use as input (default: use STDIN)").Short('i').String()
+	var app_output = app.Flag("output", "Name of file to use as output (default: use STDOUT)").Short('o').String()
 	var app_cef = app.Flag("cef", "Generate CEF as output (default: generate CEB)").Bool()
 	var transpose = app.Command("transpose", "Transpose the file")
 	//	var info = app.Command("info", "Show a summary of the file contents")

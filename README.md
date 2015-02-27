@@ -81,30 +81,27 @@ Strings are stored as UTF-8 with a leading int32 length indicator, and no termin
 File structure
 
 	byte[4]	'CEB\t' magic word
+	byte[4] 'v0.1' version string
 
-	int64	Row count
 	int64	Column count
+	int64	Row count
 
 	int32	Column attribute count
 	string	Column attribute name #1 
+	string[] Column attribute #1 values (total equal to column count)
 	string	Column attribute name #2 
+	string[] Column attribute #2 values
 	...
 	string	Column attribute name #n 
-
-	string[] Column attribute #1 values (total equal to column count)
-	string[] Column attribute #2 values
-	...		
 	string[] Column attribute #n values
 
 	int32	Row attribute count
 	string	Row attribute name #1
+	string[] Row attribute #1 values (total equal to row count)
 	string	Row attribute name #2
+	string[] Row attribute #2 values
 	...
 	string	Row attribute name #n
-
-	string[] Row attribute #1 values (total equal to row count)
-	string[] Row attribute #2 values
-	...		
 	string[] Row attribute #n values
 
 	float32[] Values, total of [Row count x Column count] values
