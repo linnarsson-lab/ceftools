@@ -1,4 +1,4 @@
-package main
+package cef
 
 type Annotation struct {
 	Name   string
