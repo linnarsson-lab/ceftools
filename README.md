@@ -62,11 +62,12 @@ Row attributes and values
 
 Example of a file with 4 Row Attributes, 2 Column Attributes, 345 Rows, 123 Columns
 
-|CEF| 4 | 2 |345|123 |    |
+|---|---|---|---|----|----|----|
+|CEF| 4 | 2 |345|123 |    |    |
 |	|	|	|   |Ca1 |Cv11|Cv12|
 |	|	|	|   |Ca2 |Cv21|Cv22|
-|Ra1|Ra2|Ra3|Ra4|    |    |
-|Rv1|Rv2|Rv3|Rv4|    |v11 |v12 |...
+|Ra1|Ra2|Ra3|Ra4|    |    |    |
+|Rv1|Rv2|Rv3|Rv4|    |v11 |v12 |
 
 
 
