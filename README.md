@@ -63,9 +63,9 @@ Example of a file with 4 Row Attributes, 2 Column Attributes, 345 Rows, 123 Colu
 |   |   |   |   |    |    |    |
 |---|---|---|---|----|----|----|
 |CEF| 4 | 2 |345|123 |    |    |
-|	|	|	|   |Sex |Male|Female|
-|	|	|	|   |Age |P22|P28|
-|Gene|Chromosome|Position|Strand|    |    |    |
+|	|	|	|   |**Sex** |Male|Female|
+|	|	|	|   |**Age** |P22|P28|
+|**Gene**|**Chromosome**|**Position**|**Strand**|    |    |    |
 |Actb|2|12837184|+|    |11 |24 |
 |Nkx2-1|17|33432|-|    |0 |41 |
 |   |   |   |   |    |    | ...|
