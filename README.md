@@ -49,26 +49,26 @@ CEF files are tab-delimited text files in UTF-8 encoding. The first four charact
 
 CEB files are binary. The first four bytes are UTF-8 encoded 'CEB\t' (that's a single tab character at the end), equivalent to the hexadecimal 4-byte number 0x43454209.
 
-The first four bytes of a file therefore unambiguously indicate if it's a CEF or CEB file (assuming it is know to be one of the two).
+The first four bytes of a file therefore unambiguously indicate if it's a CEF or CEB file (assuming it's known to be one of the two).
 
 
 ### CEF file format
 
 Tab-delimited file, UTF-8 encoding, no BOM
+
 Header line starting with 'CEF' and followed by row attribute count, column attribute count, row count and column count
-Column attributes (with empty cells giving place for row attributes)
-Row headers followed by blanks
-Row attributes and values
 
 Example of a file with 4 Row Attributes, 2 Column Attributes, 345 Rows, 123 Columns
 
 |   |   |   |   |    |    |    |
 |---|---|---|---|----|----|----|
 |CEF| 4 | 2 |345|123 |    |    |
-|	|	|	|   |Ca1 |Cv11|Cv12|
-|	|	|	|   |Ca2 |Cv21|Cv22|
-|Ra1|Ra2|Ra3|Ra4|    |    |    |
-|Rv1|Rv2|Rv3|Rv4|    |v11 |v12 |
+|	|	|	|   |Sex |Male|Female|
+|	|	|	|   |Age |P22|P28|
+|Gene|Chromosome|Position|Strand|    |    |    |
+|Actb|2|12837184|+|    |11 |24 |
+|Nkx2-1|17|33432|-|    |0 |41 |
+|   |   |   |   |    |    | ...|
 
 
 
@@ -76,33 +76,35 @@ Example of a file with 4 Row Attributes, 2 Column Attributes, 345 Rows, 123 Colu
 
 Binary file, little endian
 
-*Types* 
+Strings are stored as UTF-8 with a leading int32 length indicator, and no terminator
 
-		int32 ('in32')		32-bit signed integer
-		int63 ('in64')		64-bit signed integer
-		float32 ('real')	32-bit floating-point
-		string ('strn')		int32 string length, followed by UTF-8 encoded characters
-		word ('word')		four 7-bit ascii characters stored in order
+File structure
 
-word	'ceb\0' magic word
-word	'v0.1' version string
+	byte[4]	'CEB\t' magic word
 
-int32	Header length
-int64	Row count
-int64	Column count
-int32	Column attribute count
-string	Column attribute name #1
-word	Column attribute #1 type ('real', 'intg', 'strn')
-...
+	int64	Row count
+	int64	Column count
 
-int32	Row attribute count
-string	Row attribute name #1
-word	Row attribute #1 type ('real', 'in32', 'in64', 'strn')
-...
+	int32	Column attribute count
+	string	Column attribute name #1 
+	string	Column attribute name #2 
+	...
+	string	Column attribute name #n 
 
-...		Column attribute #1 values
-...		Row attribute #1 values
+	string[] Column attribute #1 values (total equal to column count)
+	string[] Column attribute #2 values
+	...		
+	string[] Column attribute #n values
 
-...potentially additional bytes of header
+	int32	Row attribute count
+	string	Row attribute name #1
+	string	Row attribute name #2
+	...
+	string	Row attribute name #n
 
-float32	Values, total of [Row count x Column count] values
+	string[] Row attribute #1 values (total equal to row count)
+	string[] Row attribute #2 values
+	...		
+	string[] Row attribute #n values
+
+	float32[] Values, total of [Row count x Column count] values
