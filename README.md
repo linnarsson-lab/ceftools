@@ -26,7 +26,6 @@ cef info            - overview of file contents
 cef transpose	  	- transpose rows and columns
 cef join		  	- join two datasets by given identifier
 cef remove 			- remove attribute
-cef annotate        - insert attribute from file
 cef filter			- filter rows by given criteria
 cef normalize		- normalize rows
 cef sort			- sort by attribute or column value, or by correlation

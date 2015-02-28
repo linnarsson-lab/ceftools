@@ -1,14 +1,14 @@
 package cef
 
-type Annotation struct {
+type CefAttribute struct {
 	Name   string
 	Values []string
 }
 
 type CefFile struct {
-	RowAnnotations    []Annotation
-	ColumnAnnotations []Annotation
-	Rows              int
-	Columns           int
-	Matrix            []float32
+	NumRows          int64
+	NumColumns       int64
+	RowAttributes    []CefAttribute
+	ColumnAttributes []CefAttribute
+	Matrix           []float32
 }

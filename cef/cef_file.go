@@ -14,79 +14,103 @@ func Read(f *os.File) (*CefFile, error) {
 	if magic == 0x43454209 { // "CEB\t"
 		return readCeb(f)
 	}
-	if magic == 0x43454609 { // "CEF\t"
-		return readCef(f)
+	if magic == 0x43454609 { // "CF\t"
+		return readCf(f)
 	}
 	return nil, errors.New("Unknown file format")
 }
 
-func readCef(f *os.File) (*CefFile, error) {
-	var cef = csv.NewReader(f)
-	cef.Comma = '\t'
-	cef.FieldsPerRecord = -1
-	//	var row, err = cef.Read()
+func readCf(f *os.File) (*CefFile, error) {
+	var cf = csv.NewReader(f)
+	cf.Comma = '\t'
+	cf.FieldsPerRecord = -1
+	//	var row, err = cf.Read()
 
 	return nil, nil
 }
 
 func readCeb(f *os.File) (*CefFile, error) {
+	// Allocate a CF file struct
+	var cf CefFile
+
 	// Ensure we're dealing with the correct version of the CEB file format
 	var version int32
-	var err := binary.Read(f, binary.LittleEndian, &version)
+	err := binary.Read(f, binary.LittleEndian, &version)
 	if err != nil || version != 0x76302E31 {
 		return nil, errors.New("This CEB file version is not supported by this version of Cellophane")
 	}
 
 	// Read the column and row counts
-	var nCols int64
-	if err = binary.Read(f, binary.LittleEndian, &nCols); err != nil { return nil, err }
-	var nRows int64
-	if err = binary.Read(f, binary.LittleEndian, &nRows); err != nil { return nil, err }
+	if err = binary.Read(f, binary.LittleEndian, &cf.NumColumns); err != nil {
+		return nil, err
+	}
+	if err = binary.Read(f, binary.LittleEndian, &cf.NumRows); err != nil {
+		return nil, err
+	}
 
 	// Read the column attributes
 	var nColAttrs int32
-	if err = binary.Read(f, binary.LittleEndian, &nColAttrs); err != nil { return nil, err }
-	var colAttrNames [nColAttrs]string
-	var colAttrValues [nCols][nColAttrs]string
-	for c := 0; c < nColAttrs; c++ {
-		if colAttrNames[c], err = readString(f); err != nil { return nil, err }
-
-		for cv := 0; cv < nCols; cv++ {
-			if colAttrValues[cv][c], err = readString(f); err != nil { return nil, err }
+	if err = binary.Read(f, binary.LittleEndian, &nColAttrs); err != nil {
+		return nil, err
+	}
+	cf.ColumnAttributes = make([]CefAttribute, nColAttrs)
+	for i := int32(0); i < nColAttrs; i++ {
+		colAttrName, err := readString(f)
+		if err != nil {
+			return nil, err
+		}
+		cf.ColumnAttributes[i] = CefAttribute{colAttrName, make([]string, cf.NumColumns)}
+		for j := int64(0); j < cf.NumColumns; j++ {
+			if cf.ColumnAttributes[i].Values[j], err = readString(f); err != nil {
+				return nil, err
+			}
 		}
 	}
 
 	// Read the row attributes
 	var nRowAttrs int32
-	if err = binary.Read(f, binary.LittleEndian, &nRowAttrs); err != nil { return nil, err }
-	var rowAttrNames [nRowAttrs]string
-	var rowAttrValues [nRows][nRowAttrs]string
-	for r := 0; r < nRowAttrs; r++ {
-		if rowAttrNames[r], err = readString(f); err != nil { return nil, err }
-
-		for rv := 0; rv < nRows; rv++ {
-			if rowAttrValues[rv][r], err = readString(f); err != nil { return nil, err }
+	if err = binary.Read(f, binary.LittleEndian, &nRowAttrs); err != nil {
+		return nil, err
+	}
+	cf.RowAttributes = make([]CefAttribute, nRowAttrs)
+	for i := int32(0); i < nRowAttrs; i++ {
+		rowAttrName, err := readString(f)
+		if err != nil {
+			return nil, err
+		}
+		cf.RowAttributes[i] = CefAttribute{rowAttrName, make([]string, cf.NumRows)}
+		for j := int64(0); j < cf.NumRows; j++ {
+			if cf.RowAttributes[i].Values[j], err = readString(f); err != nil {
+				return nil, err
+			}
 		}
 	}
 
 	// Read the matrix
-	var matrix [nCols][nRows]float32
-	for c = 0; c < nCols; c++ {
-		for r = 0; r < nRows; r++ {
-			if err = binary.Read(f, binary.LittleEndian, &matrix[c][r]); err != nil { return nil, err }
+	cf.Matrix = make([]float32, cf.NumColumns*cf.NumRows)
+	for i := int64(0); i < cf.NumColumns; i++ {
+		for j := int64(0); j < cf.NumRows; j++ {
+			var value float32
+			if err = binary.Read(f, binary.LittleEndian, &value); err != nil {
+				return nil, err
+			}
+			cf.Matrix[i+j*cf.NumColumns] = value
 		}
 	}
 
-	// Assemble the CEB structure and return
-	return nil, nil
+	return &cf, nil
 }
 
-func readString(f, *os.File) (string, error) {
+func readString(f *os.File) (string, error) {
 	var length int32
-	if err = binary.Read(f, binary.LittleEndian, &length); err != nil { return "", err }
+	if err := binary.Read(f, binary.LittleEndian, &length); err != nil {
+		return "", err
+	}
 
-	var buffer [length]byte
-	if err = binary.Read(f, binary.LittleEndian, &buffer); err != nil { return "", err }
+	var buffer = make([]byte, length)
+	if err := binary.Read(f, binary.LittleEndian, &buffer); err != nil {
+		return "", err
+	}
 
 	return string(buffer), nil
 }

@@ -54,11 +54,11 @@ func main() {
 		if *app_cef {
 			fmt.Fprintln(os.Stderr, "Generating CEF file instead of CEB")
 		}
-		var cef, err = cef.Read(input)
+		var cf, err = cef.Read(input)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			return
 		}
-		output.WriteString(cef.ColumnAnnotations[0].Name)
+		output.WriteString(cf.ColumnAttributes[0].Name)
 	}
 }
