@@ -74,9 +74,13 @@ Example of a file with 1 header, 4 Row Attributes, 2 Column Attributes, 345 Rows
 
 ### CEB file format
 
-CEB files are binary, gzip-compressed, and little endian. The following is a description of the decompressed file, but valid CEB files are always gzip-compressed.
+CEB files are binary and little endian.
 
 Strings are stored as UTF-8 with a leading int32 length indicator, and no terminator
+
+Values are stored as a vector of rows 
+
+If the Transposed flag is set, column and row attributes should be exchanged when reading, and the values should be read in transposed order (i.e. as a vector of columns).
 
 File structure
 
@@ -85,7 +89,7 @@ File structure
 
 	int64	Column count
 	int64	Row count
-
+	int64 	Flags (0x0000000000000001 -> Transposed)
 	float32[] Values, total of [Row count x Column count] values
 
 	int32 Header entries count
