@@ -14,13 +14,21 @@ func Read(f *os.File) (*CefFile, error) {
 	if magic == 0x43454209 { // "CEB\t"
 		return readCeb(f)
 	}
-	if magic == 0x43454609 { // "CF\t"
-		return readCf(f)
+	if magic == 0x43454609 { // "CEF\t"
+		return readCef(f)
 	}
 	return nil, errors.New("Unknown file format")
 }
 
-func readCf(f *os.File) (*CefFile, error) {
+func WriteAsCeb(f *os.File) error {
+
+}
+
+func WriteAsCef(f *os.File) error {
+
+}
+
+func readCef(f *os.File) (*CefFile, error) {
 	var cf = csv.NewReader(f)
 	cf.Comma = '\t'
 	cf.FieldsPerRecord = -1
@@ -46,6 +54,36 @@ func readCeb(f *os.File) (*CefFile, error) {
 	}
 	if err = binary.Read(f, binary.LittleEndian, &cf.NumRows); err != nil {
 		return nil, err
+	}
+
+	// Read the matrix
+	cf.Matrix = make([]float32, cf.NumColumns*cf.NumRows)
+	for i := int64(0); i < cf.NumColumns; i++ {
+		for j := int64(0); j < cf.NumRows; j++ {
+			var value float32
+			if err = binary.Read(f, binary.LittleEndian, &value); err != nil {
+				return nil, err
+			}
+			cf.Matrix[i+j*cf.NumColumns] = value
+		}
+	}
+
+	// Read the headers
+	var nHeaders int32
+	if err = binary.Read(f, binary.LittleEndian, &nHeaders); err != nil {
+		return nil, err
+	}
+	cf.Headers = make([]CefHeader, nHeaders)
+	for i := int32(0); i < nHeaders; i++ {
+		hdrName, err := readString(f)
+		if err != nil {
+			return nil, err
+		}
+		hdrValue, err := readString(f)
+		if err != nil {
+			return nil, err
+		}
+		cf.Headers[i] = CefHeader{hdrName, hdrValue}
 	}
 
 	// Read the column attributes
@@ -83,18 +121,6 @@ func readCeb(f *os.File) (*CefFile, error) {
 			if cf.RowAttributes[i].Values[j], err = readString(f); err != nil {
 				return nil, err
 			}
-		}
-	}
-
-	// Read the matrix
-	cf.Matrix = make([]float32, cf.NumColumns*cf.NumRows)
-	for i := int64(0); i < cf.NumColumns; i++ {
-		for j := int64(0); j < cf.NumRows; j++ {
-			var value float32
-			if err = binary.Read(f, binary.LittleEndian, &value); err != nil {
-				return nil, err
-			}
-			cf.Matrix[i+j*cf.NumColumns] = value
 		}
 	}
 

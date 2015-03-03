@@ -36,7 +36,7 @@ cef view			- print parts of the matrix
 Commands operate on rows. For example `remove` can be used to remove row attributes, but not column attributes. If you want to operate on columns, you must first transpose the file (use pipes to avoid storing the intermediate files). For example:
 
 ```
-cef transpose | cef remove Age | cef transpose < infile.ceb > outfile.ceb 
+< infile.ceb cef transpose | cef remove Age | cef transpose > outfile.ceb 
 ```
 
 
@@ -57,11 +57,12 @@ Tab-delimited file, UTF-8 encoding, no BOM
 
 Header line starting with 'CEF' and followed by row attribute count, column attribute count, row count and column count
 
-Example of a file with 4 Row Attributes, 2 Column Attributes, 345 Rows, 123 Columns
+Example of a file with 1 header, 4 Row Attributes, 2 Column Attributes, 345 Rows, 123 Columns
 
 |   |   |   |   |    |    |    |
 |---|---|---|---|----|----|----|
 |CEF| 4 | 2 |345|123 |    |    |
+|Header name|Header value| | | | | |
 |	|	|	|   |**Sex** |Male|Female|
 |	|	|	|   |**Age** |P22|P28|
 |**Gene**|**Chromosome**|**Position**|**Strand**|    |    |    |
@@ -73,7 +74,7 @@ Example of a file with 4 Row Attributes, 2 Column Attributes, 345 Rows, 123 Colu
 
 ### CEB file format
 
-Binary file, little endian
+CEB files are binary, gzip-compressed, and little endian. The following is a description of the decompressed file, but valid CEB files are always gzip-compressed.
 
 Strings are stored as UTF-8 with a leading int32 length indicator, and no terminator
 
@@ -84,6 +85,15 @@ File structure
 
 	int64	Column count
 	int64	Row count
+
+	float32[] Values, total of [Row count x Column count] values
+
+	int32 Header entries count
+	string Header #1 name
+	string Header #1 value
+	...
+	string Header #n name
+	string Header #n value
 
 	int32	Column attribute count
 	string	Column attribute name #1 
@@ -103,4 +113,3 @@ File structure
 	string	Row attribute name #n
 	string[] Row attribute #n values
 
-	float32[] Values, total of [Row count x Column count] values
