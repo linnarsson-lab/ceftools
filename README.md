@@ -61,7 +61,7 @@ Example of a file with 1 header, 4 Row Attributes, 2 Column Attributes, 345 Rows
 
 |   |   |   |   |    |    |    |
 |---|---|---|---|----|----|----|
-|CEF| 4 | 2 |345|123 |    |    |
+|CEF| 1 | 4 | 2 |345 |123 |    |
 |Header name|Header value| | | | | |
 |	|	|	|   |**Sex** |Male|Female|
 |	|	|	|   |**Age** |P22|P28|
