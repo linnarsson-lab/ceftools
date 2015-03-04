@@ -1,6 +1,6 @@
 # Cellophane
 
-Tools for manipulating cell expression format (CEF and CEB) files
+Tools for manipulating cell expression binary (CEB) files, and for importing and exporting to text-based CEF files.
 
 **Note: Cellophane is not yet ready for use, nor do I know when it will be**
 
@@ -15,9 +15,10 @@ Cellophane is implemented as a command-line utility called `cef`, which operates
 values. It supports useful operations such as filtering, sorting, splitting, joining and transposing the input. Multiple 
 commands can be chained to perform more complex operations.
 
-Cellophane works with binary files in CEB format ('cell expression binary', `.ceb`), which are compact but not human-readable. CEB files can be
+Cellophane processes binary files in CEB format ('cell expression binary', `.ceb`), which are compact but not human-readable. CEB files can be
 converted to and from the text-based CEF format ('cell expression format', `.cef`) suitable for human consumption. CEF files are tab-delimited 
-text files that can be easily parsed or imported into e.g. Excel. 
+text files that can be easily parsed or imported into e.g. Excel. Not all features of CEB files are guaranteed to be faithfully retained in CEF, so
+CEB should be considered the canonical reference format.
 
 ## Synopsis
 
@@ -32,16 +33,18 @@ cef aggregate		- calculate aggregate statistics for every row
 cef view			- print parts of the matrix
 ```
 
-Commands operate on rows by default. For example `remove` can be used to remove row attributes, but not column attributes. Every command accepts a `--transpose none|before|after|twice` parameter, which causes the CEB to be transposed before and/or after the operation is applied. This can be used to operate on columns. For example, to remove column attribute `Age`:
+Commands operate on rows by default. For example `remove` can be used to remove row attributes, but not column attributes. Every command accepts a `--transpose none|in|out|inout` parameter, which causes the CEB to be transposed before and/or after the operation is applied. This can be used to operate on columns. For example, to remove column attribute `Age`:
 
 ```
-< infile.ceb cef --transpose twice remove Age > outfile.ceb 
+< infile.ceb cef --transpose inout remove Age > outfile.ceb 
 ```
 
 
 ## CEF and CEB file formats
 
 ### Detecting the file format
+
+Cellophane transparently reads and distinguishes CEB and CEF files without any further specification of the input format. Thus, the input can be in either format, and it will just work.
 
 CEF files are tab-delimited text files in UTF-8 encoding. The first four characters are 'CEF\t' (that's a single tab character at then end), equivalent to the hexadecimal 4-byte number 0x43454609. There is no byte order mark (BOM).
 
@@ -52,15 +55,15 @@ The first four bytes of a file therefore unambiguously indicate if it's a CEF or
 
 ### CEF file format
 
-Tab-delimited file, UTF-8 encoding, no BOM
+Tab-delimited file, UTF-8 encoding, no BOM. Each line has the same number of tabs, equal to `(column count + row attribute count)`. In other words, the file is a rectangular tab-delimited matrix.
 
-Header line starting with 'CEF' and followed by row attribute count, column attribute count, row count and column count
+Header line starting with 'CEF' and followed by row attribute count, column attribute count, row count, column count and the flags value.
 
-Example of a file with 1 header, 4 Row Attributes, 2 Column Attributes, 345 Rows, 123 Columns
+Example of a file with 1 header, 4 Row Attributes, 2 Column Attributes, 345 Rows, 123 Columns. The last number (0) in the first row is the `Flags` value, currently unused.
 
 |   |   |   |   |    |    |    |
 |---|---|---|---|----|----|----|
-|CEF| 1 | 4 | 2 |345 |123 |    |
+|CEF| 1 | 4 | 2 |345 |123 |  0 |
 |Header name|Header value| | | | | |
 |	|	|	|   |**Sex** |Male|Female|
 |	|	|	|   |**Age** |P22|P28|
@@ -83,7 +86,7 @@ CEB files contain a minor/major version indicator. Major version changes are onl
 
 #### Skipped bytes and flags
 
-There is a section in the file, following the main matrix of values, that should simply be skipped. The purpose of this section is to make room for future file format extensions, while maintaininb backward compatibility. A future v0.2 file format might store some data in the skipped section, and compliant v0.1 parsers will simply ignore it and still be able to read the file. 
+There is a section in the file, following the main matrix of values, that should simply be skipped. The purpose of this section is to make room for future file format extensions, while maintaining backward compatibility. A future v0.2 file format might store some data in the skipped section, and compliant v0.1 parsers will simply ignore it and still be able to read the file. 
 
 There is also a `Flags` field, currently unused
 
