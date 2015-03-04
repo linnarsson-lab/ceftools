@@ -10,10 +10,15 @@ type CefHeader struct {
 	Value string
 }
 
+const (
+	Transposed = 1 << iota
+)
+
 type CefFile struct {
 	NumRows          int64
 	NumColumns       int64
 	Headers          []CefHeader
+	Flags            int64
 	RowAttributes    []CefAttribute
 	ColumnAttributes []CefAttribute
 	Matrix           []float32

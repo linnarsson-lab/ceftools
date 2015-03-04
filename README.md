@@ -23,7 +23,6 @@ text files that can be easily parsed or imported into e.g. Excel.
 
 ```
 cef info            - overview of file contents
-cef transpose	  	- transpose rows and columns
 cef join		  	- join two datasets by given identifier
 cef remove 			- remove attribute
 cef filter			- filter rows by given criteria
@@ -33,10 +32,10 @@ cef aggregate		- calculate aggregate statistics for every row
 cef view			- print parts of the matrix
 ```
 
-Commands operate on rows. For example `remove` can be used to remove row attributes, but not column attributes. If you want to operate on columns, you must first transpose the file (use pipes to avoid storing the intermediate files). For example:
+Commands operate on rows by default. For example `remove` can be used to remove row attributes, but not column attributes. Every command accepts a `--transpose none|before|after|twice` parameter, which causes the CEB to be transposed before and/or after the operation is applied. This can be used to operate on columns. For example, to remove column attribute `Age`:
 
 ```
-< infile.ceb cef transpose | cef remove Age | cef transpose > outfile.ceb 
+< infile.ceb cef --transpose twice remove Age > outfile.ceb 
 ```
 
 
@@ -74,23 +73,35 @@ Example of a file with 1 header, 4 Row Attributes, 2 Column Attributes, 345 Rows
 
 ### CEB file format
 
-CEB files are binary and little endian.
+CEB files are binary and little endian. Strings are stored as UTF-8 with a leading int32 (signed 32-bit integer) length indicator, and no terminator. Values are stored as a vector of rows, as IEEE-754 float32 values. 
 
-Strings are stored as UTF-8 with a leading int32 length indicator, and no terminator
 
-Values are stored as a vector of rows 
+#### Version
 
-If the Transposed flag is set, column and row attributes should be exchanged when reading, and the values should be read in transposed order (i.e. as a vector of columns).
+CEB files contain a minor/major version indicator. Major version changes are only backward compatible (newer parsers can read older files). Minor version changes are both forward and backward compatible (older parsers can read newer files). A compliant CEB parser should refuse to read a CEB file with a larger major version, but should ignore the minor version. 
 
-File structure
+
+#### Skipped bytes and flags
+
+There is a section in the file, following the main matrix of values, that should simply be skipped. The purpose of this section is to make room for future file format extensions, while maintaininb backward compatibility. A future v0.2 file format might store some data in the skipped section, and compliant v0.1 parsers will simply ignore it and still be able to read the file. 
+
+There is also a `Flags` field, currently unused
+
+
+#### File structure
 
 	byte[4]	'CEB\t' magic word
-	byte[4] 'v0.1' version string
+	int32 	Major version (backward incompatible)
+	int32	Minor version (backward compatible)
 
 	int64	Column count
 	int64	Row count
-	int64 	Flags (0x0000000000000001 -> Transposed)
+	int64 	Flags
+
 	float32[] Values, total of [Row count x Column count] values
+
+	int32 		Skip length (number of bytes to skip)
+	byte[n] 	Skipped bytes (skipped bytes)
 
 	int32 Header entries count
 	string Header #1 name

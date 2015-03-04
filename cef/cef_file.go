@@ -21,11 +21,11 @@ func Read(f *os.File) (*CefFile, error) {
 }
 
 func WriteAsCeb(f *os.File) error {
-
+	return nil
 }
 
 func WriteAsCef(f *os.File) error {
-
+	return nil
 }
 
 func readCef(f *os.File) (*CefFile, error) {
@@ -42,10 +42,16 @@ func readCeb(f *os.File) (*CefFile, error) {
 	var cf CefFile
 
 	// Ensure we're dealing with the correct version of the CEB file format
-	var version int32
-	err := binary.Read(f, binary.LittleEndian, &version)
-	if err != nil || version != 0x76302E31 {
+	var majorVersion int32
+	err := binary.Read(f, binary.LittleEndian, &majorVersion)
+	if err != nil || majorVersion > 0 {
 		return nil, errors.New("This CEB file version is not supported by this version of Cellophane")
+	}
+	// The minor version is ignored (given that the major version was ok); changes should be backward compatible
+	var minorVersion int32
+	err = binary.Read(f, binary.LittleEndian, &minorVersion)
+	if err != nil {
+		return nil, err
 	}
 
 	// Read the column and row counts
@@ -55,6 +61,11 @@ func readCeb(f *os.File) (*CefFile, error) {
 	if err = binary.Read(f, binary.LittleEndian, &cf.NumRows); err != nil {
 		return nil, err
 	}
+	// Read the flags
+	if err = binary.Read(f, binary.LittleEndian, &cf.Flags); err != nil {
+		return nil, err
+	}
+	transposed := (cf.Flags & Transposed) != 0
 
 	// Read the matrix
 	cf.Matrix = make([]float32, cf.NumColumns*cf.NumRows)
@@ -64,7 +75,29 @@ func readCeb(f *os.File) (*CefFile, error) {
 			if err = binary.Read(f, binary.LittleEndian, &value); err != nil {
 				return nil, err
 			}
-			cf.Matrix[i+j*cf.NumColumns] = value
+			if transposed {
+				cf.Matrix[i*cf.NumRows+j] = value // TODO: verify this
+			} else {
+				cf.Matrix[i+j*cf.NumColumns] = value
+			}
+		}
+	}
+
+	// Exchange the row column counts
+	if transposed {
+		temp := cf.NumRows
+		cf.NumRows = cf.NumColumns
+		cf.NumColumns = temp
+	}
+
+	// Skip some bytes
+	var nSkip int32
+	if err = binary.Read(f, binary.LittleEndian, &nSkip); err != nil {
+		return nil, err
+	}
+	if nSkip > 0 {
+		if _, err = f.Seek(int64(nSkip), 1); err != nil {
+			return nil, err
 		}
 	}
 
@@ -122,6 +155,13 @@ func readCeb(f *os.File) (*CefFile, error) {
 				return nil, err
 			}
 		}
+	}
+
+	// Exchange the row column attributes
+	if transposed {
+		temp := cf.RowAttributes
+		cf.RowAttributes = cf.ColumnAttributes
+		cf.ColumnAttributes = temp
 	}
 
 	return &cf, nil

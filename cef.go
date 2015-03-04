@@ -51,14 +51,16 @@ func main() {
 	// Transpose file
 	case transpose.FullCommand():
 		fmt.Fprintln(os.Stderr, "Transposing the CEF/CEB file...")
-		if *app_cef {
-			fmt.Fprintln(os.Stderr, "Generating CEF file instead of CEB")
-		}
 		var cf, err = cef.Read(input)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			return
 		}
-		output.WriteString(cf.ColumnAttributes[0].Name)
+		cf.Flags &^= cef.Transposed
+		if *app_cef {
+			cef.WriteAsCef(output)
+		} else {
+			cef.WriteAsCeb(output)
+		}
 	}
 }
