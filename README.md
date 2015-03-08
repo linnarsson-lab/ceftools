@@ -1,28 +1,28 @@
-# Cellophane
+# ceftools
 
 Tools for manipulating cell expression binary (CEB) files, and for importing and exporting to text-based CEF files.
 
-**Note: Cellophane is not yet ready for use, nor do I know when it will be**
+**Note: ceftools is not yet ready for use, nor do I know when it will be**
 
 ## Overview
 
-Cellophane is a set of tools designed to manipulate large-scale gene expression data. It aims to be for gene 
+ceftools is a set of tools designed to manipulate large-scale gene expression data. It aims to be for gene 
 expression data what [samtools](http://samtools.github.io) is for sequence data. It was designed to simplify the exchange
 and manipulation of very large-scale transcriptomics data, particularly from single-cell RNA-seq. However, it can process
 any omics dataset that can be represented as an annotated matrix of numbers.
 
-Cellophane is implemented as a command-line utility called `cef`, which operates on an annotated matrix of gene-expression 
+ceftools is implemented as a command-line utility called `cef`, which operates on an annotated matrix of gene-expression 
 values. It supports useful operations such as filtering, sorting, splitting, joining and transposing the input. Multiple 
 commands can be chained to perform more complex operations.
 
-Cellophane processes binary files in CEB format ('cell expression binary', `.ceb`), which are compact but not human-readable. CEB files can be
+ceftools processes binary files in CEB format ('cell expression binary', `.ceb`), which are compact but not human-readable. CEB files can be
 converted to and from the text-based CEF format ('cell expression format', `.cef`) suitable for human consumption. CEF files are tab-delimited 
-text files that can be easily parsed or imported into e.g. Excel. Not all features of CEB files are guaranteed to be faithfully retained in CEF, so
-CEB should be considered the canonical reference format.
+text files that can be easily parsed or imported into e.g. Excel. Not all features of CEB files are guaranteed to be faithfully retained in CEF, so CEB should be considered the canonical reference format.
 
 ## Synopsis
 
 ```
+
 cef info            - overview of file contents
 cef join		  	- join two datasets by given identifier
 cef remove 			- remove attribute
@@ -33,10 +33,10 @@ cef aggregate		- calculate aggregate statistics for every row
 cef view			- print parts of the matrix
 ```
 
-Commands operate on rows by default. For example `remove` can be used to remove row attributes, but not column attributes. Every command accepts a `--transpose none|in|out|inout` parameter, which causes the CEB to be transposed before and/or after the operation is applied. This can be used to operate on columns. For example, to remove column attribute `Age`:
+Commands operate on rows by default. For example `remove` can be used to remove row attributes, but not column attributes. Every command accepts a `--transpose none|in|out|inout` parameter, which causes the CEB to be transposed before and/or after the operation is applied. This can be used to operate on columns. For example, to remove column attribute `Age` then sort on column attribute `Length`:
 
 ```
-< infile.ceb cef --transpose inout remove Age > outfile.ceb 
+< infile.ceb cef --transpose in remove Age | cef --transpose out sort Length > outfile.ceb 
 ```
 
 
@@ -44,7 +44,7 @@ Commands operate on rows by default. For example `remove` can be used to remove 
 
 ### Detecting the file format
 
-Cellophane transparently reads and distinguishes CEB and CEF files without any further specification of the input format. Thus, the input can be in either format, and it will just work.
+ceftools transparently reads and distinguishes CEB and CEF files without any further specification of the input format. Thus, the input can be in either format, and it will just work.
 
 CEF files are tab-delimited text files in UTF-8 encoding. The first four characters are 'CEF\t' (that's a single tab character at then end), equivalent to the hexadecimal 4-byte number 0x43454609. There is no byte order mark (BOM).
 
@@ -55,9 +55,13 @@ The first four bytes of a file therefore unambiguously indicate if it's a CEF or
 
 ### CEF file format
 
-Tab-delimited file, UTF-8 encoding, no BOM. Each line has the same number of tabs, equal to `(column count + row attribute count)`. In other words, the file is a rectangular tab-delimited matrix.
+Tab-delimited file with newline endings, UTF-8 encoding, no BOM. Carriage returns before newline characters are silently removed. Each row has the same number of tab-separated fields, equal to `(column count + row attribute count + 1)`. In other words, the entire file is a rectangular tab-delimited matrix. 
 
-Header line starting with 'CEF' and followed by row attribute count, column attribute count, row count, column count and the flags value.
+The first line defines the file structure. It begins 'CEF', followed by column count, row count, column attribute count, row attribute count, and the `Flags` value.
+
+This is followed by header lines, which are name-value pairs, with the name in the first column and the value in the second. There are no restrictions on either the names or the values, except that they cannot contain tabs, newlines or carriage returns.
+
+Next, the column attributes are given, each in a single row with an offset of 
 
 Example of a file with 1 header, 4 Row Attributes, 2 Column Attributes, 345 Rows, 123 Columns. The last number (0) in the first row is the `Flags` value, currently unused.
 
@@ -103,7 +107,7 @@ There is also a `Flags` field, currently unused
 
 	float32[] Values, total of [Row count x Column count] values
 
-	int32 		Skip length (number of bytes to skip)
+	int64 		Skip length (number of bytes to skip)
 	byte[n] 	Skipped bytes (skipped bytes)
 
 	int32 Header entries count

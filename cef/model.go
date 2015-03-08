@@ -15,6 +15,8 @@ const (
 )
 
 type CefFile struct {
+	MajorVersion     int32
+	MinorVersion     int32
 	NumRows          int64
 	NumColumns       int64
 	Headers          []CefHeader

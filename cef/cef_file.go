@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"os"
+	"strconv"
 )
 
 func Read(f *os.File) (*CefFile, error) {
@@ -12,23 +13,32 @@ func Read(f *os.File) (*CefFile, error) {
 	binary.Read(f, binary.LittleEndian, &magic)
 
 	if magic == 0x43454209 { // "CEB\t"
-		return readCeb(f)
+		return readCEB(f)
 	}
 	if magic == 0x43454609 { // "CEF\t"
-		return readCef(f)
+		return readCEF(f)
 	}
 	return nil, errors.New("Unknown file format")
 }
 
-func WriteAsCeb(f *os.File) error {
+func WriteAsCEB(cf *CefFile, f *os.File, transposed bool) error {
 	return nil
 }
 
-func WriteAsCef(f *os.File) error {
+func WriteAsCEF(cf *CefFile, f *os.File, transposed bool) error {
+	w := csv.NewWriter(f)
+	w.Comma = '\t'
+
+	// Write the header
+	row := make([]string, int(cf.NumColumns)+len(cf.RowAttributes)+1)
+	row[0] = "CEF"
+	row[1] = strconv.Itoa(len(cf.Headers))
+	row[2] = strconv.Itoa(int(cf.NumColumns))
+
 	return nil
 }
 
-func readCef(f *os.File) (*CefFile, error) {
+func readCEF(f *os.File) (*CefFile, error) {
 	var cf = csv.NewReader(f)
 	cf.Comma = '\t'
 	cf.FieldsPerRecord = -1
@@ -37,19 +47,17 @@ func readCef(f *os.File) (*CefFile, error) {
 	return nil, nil
 }
 
-func readCeb(f *os.File) (*CefFile, error) {
+func readCEB(f *os.File, transposed bool) (*CefFile, error) {
 	// Allocate a CF file struct
 	var cf CefFile
 
 	// Ensure we're dealing with the correct version of the CEB file format
-	var majorVersion int32
-	err := binary.Read(f, binary.LittleEndian, &majorVersion)
-	if err != nil || majorVersion > 0 {
+	err := binary.Read(f, binary.LittleEndian, &cf.MajorVersion)
+	if err != nil || cf.MajorVersion > 0 {
 		return nil, errors.New("This CEB file version is not supported by this version of Cellophane")
 	}
 	// The minor version is ignored (given that the major version was ok); changes should be backward compatible
-	var minorVersion int32
-	err = binary.Read(f, binary.LittleEndian, &minorVersion)
+	err = binary.Read(f, binary.LittleEndian, &cf.MinorVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +73,6 @@ func readCeb(f *os.File) (*CefFile, error) {
 	if err = binary.Read(f, binary.LittleEndian, &cf.Flags); err != nil {
 		return nil, err
 	}
-	transposed := (cf.Flags & Transposed) != 0
 
 	// Read the matrix
 	cf.Matrix = make([]float32, cf.NumColumns*cf.NumRows)
@@ -91,12 +98,12 @@ func readCeb(f *os.File) (*CefFile, error) {
 	}
 
 	// Skip some bytes
-	var nSkip int32
+	var nSkip int64
 	if err = binary.Read(f, binary.LittleEndian, &nSkip); err != nil {
 		return nil, err
 	}
 	if nSkip > 0 {
-		if _, err = f.Seek(int64(nSkip), 1); err != nil {
+		if _, err = f.Seek(nSkip, 1); err != nil {
 			return nil, err
 		}
 	}
