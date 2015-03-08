@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/alecthomas/kingpin"
-	"github.com/slinnarsson/ceftools/cef"
+	"github.com/slinnarsson/ceftools"
 	"os"
 )
 
@@ -29,61 +29,61 @@ func main() {
 
 	// Perform test
 	case test.FullCommand():
-		var cf = new(cef.CefFile)
-		cf.NumColumns = 10
-		cf.NumRows = 10
-		cf.MajorVersion = 0
-		cf.MinorVersion = 1
-		cf.Headers = make([]cef.CefHeader, 2)
-		cf.Headers[0].Name = "Header 1"
-		cf.Headers[0].Value = "Header value 1"
-		cf.Headers[1].Name = "Header 2"
-		cf.Headers[1].Value = "Header value 2"
-		cf.ColumnAttributes = make([]cef.CefAttribute, 2)
-		cf.ColumnAttributes[0].Name = "CellID"
-		cf.ColumnAttributes[0].Values = make([]string, 10)
-		cf.ColumnAttributes[1].Name = "Well"
-		cf.ColumnAttributes[1].Values = make([]string, 10)
-		cf.RowAttributes = make([]cef.CefAttribute, 2)
-		cf.RowAttributes[0].Name = "Gene"
-		cf.RowAttributes[0].Values = make([]string, 10)
-		cf.RowAttributes[1].Name = "Chromosome"
-		cf.RowAttributes[1].Values = make([]string, 10)
-		cf.Matrix = make([]float32, 10*10)
-		cef.WriteAsCEF(cf, os.Stdout, false)
+		var cef = new(ceftools.Cef)
+		cef.NumColumns = 10
+		cef.NumRows = 10
+		cef.MajorVersion = 0
+		cef.MinorVersion = 1
+		cef.Headers = make([]ceftools.Header, 2)
+		cef.Headers[0].Name = "Header 1"
+		cef.Headers[0].Value = "Header value 1"
+		cef.Headers[1].Name = "Header 2"
+		cef.Headers[1].Value = "Header value 2"
+		cef.ColumnAttributes = make([]ceftools.Attribute, 2)
+		cef.ColumnAttributes[0].Name = "CellID"
+		cef.ColumnAttributes[0].Values = make([]string, 10)
+		cef.ColumnAttributes[1].Name = "Well"
+		cef.ColumnAttributes[1].Values = make([]string, 10)
+		cef.RowAttributes = make([]ceftools.Attribute, 2)
+		cef.RowAttributes[0].Name = "Gene"
+		cef.RowAttributes[0].Values = make([]string, 10)
+		cef.RowAttributes[1].Name = "Chromosome"
+		cef.RowAttributes[1].Values = make([]string, 10)
+		cef.Matrix = make([]float32, 10*10)
+		ceftools.WriteAsCEF(cef, os.Stdout, false)
 		return
 
 	// Show info
 	case info.FullCommand():
-		var cf, err = cef.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"), true)
+		var cef, err = ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"), true)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			return
 		}
-		fmt.Fprintln(os.Stderr, "Version: %v.%v", cf.MajorVersion, cf.MinorVersion)
-		fmt.Fprintln(os.Stderr, "Columns: %v", cf.NumColumns)
-		fmt.Fprintln(os.Stderr, "Rows: %v", cf.NumRows)
-		fmt.Fprintln(os.Stderr, "Flags: %v", cf.Flags)
+		fmt.Fprintln(os.Stderr, "Version: %v.%v", cef.MajorVersion, cef.MinorVersion)
+		fmt.Fprintln(os.Stderr, "Columns: %v", cef.NumColumns)
+		fmt.Fprintln(os.Stderr, "Rows: %v", cef.NumRows)
+		fmt.Fprintln(os.Stderr, "Flags: %v", cef.Flags)
 		fmt.Fprintln(os.Stderr, "")
 		fmt.Fprintln(os.Stderr, "Headers:")
-		for i := 0; i < len(cf.Headers); i++ {
+		for i := 0; i < len(cef.Headers); i++ {
 			fmt.Fprint(os.Stderr, "  ")
-			fmt.Fprint(os.Stderr, cf.Headers[i].Name)
+			fmt.Fprint(os.Stderr, cef.Headers[i].Name)
 			fmt.Fprint(os.Stderr, " = ")
-			fmt.Fprintln(os.Stderr, cf.Headers[i].Value)
+			fmt.Fprintln(os.Stderr, cef.Headers[i].Value)
 		}
 		fmt.Fprintln(os.Stderr, "")
 		fmt.Fprint(os.Stderr, "Column attributes: ")
-		for i := 0; i < len(cf.ColumnAttributes); i++ {
-			fmt.Fprint(os.Stderr, cf.ColumnAttributes[i].Name)
-			if i != (len(cf.ColumnAttributes) - 1) {
+		for i := 0; i < len(cef.ColumnAttributes); i++ {
+			fmt.Fprint(os.Stderr, cef.ColumnAttributes[i].Name)
+			if i != (len(cef.ColumnAttributes) - 1) {
 				fmt.Fprint(os.Stderr, ", ")
 			}
 		}
 		fmt.Fprint(os.Stderr, "Row attributes: ")
-		for i := 0; i < len(cf.RowAttributes); i++ {
-			fmt.Fprint(os.Stderr, cf.RowAttributes[i].Name)
-			if i != (len(cf.RowAttributes) - 1) {
+		for i := 0; i < len(cef.RowAttributes); i++ {
+			fmt.Fprint(os.Stderr, cef.RowAttributes[i].Name)
+			if i != (len(cef.RowAttributes) - 1) {
 				fmt.Fprint(os.Stderr, ", ")
 			}
 		}
