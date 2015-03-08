@@ -14,6 +14,11 @@ const (
 	Transposed = 1 << iota
 )
 
+const (
+	MajorVersion = 0
+	MinorVersion = 1
+)
+
 type Cef struct {
 	MajorVersion     int32
 	MinorVersion     int32

@@ -23,6 +23,113 @@ func Read(f *os.File, transposed bool, skipMatrix bool) (*Cef, error) {
 }
 
 func WriteAsCEB(cef *Cef, f *os.File, transposed bool) error {
+	writeString := func(s string) error {
+		length := int32(len(s))
+		if err := binary.Write(f, binary.LittleEndian, &length); err != nil {
+			return err
+		}
+		if _, err := f.WriteString(s); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	magic := int32(0x43454209)
+	if err := binary.Write(f, binary.LittleEndian, &magic); err != nil {
+		return err
+	}
+
+	majorVersion := int32(MajorVersion)
+	if err := binary.Write(f, binary.LittleEndian, &majorVersion); err != nil {
+		return err
+	}
+	minorVersion := int32(MinorVersion)
+	if err := binary.Read(f, binary.LittleEndian, &minorVersion); err != nil {
+		return err
+	}
+
+	// Write the column and row counts
+	if err := binary.Write(f, binary.LittleEndian, &cef.NumColumns); err != nil {
+		return err
+	}
+	if err := binary.Write(f, binary.LittleEndian, &cef.NumRows); err != nil {
+		return err
+	}
+	// Write the flags
+	if err := binary.Write(f, binary.LittleEndian, &cef.Flags); err != nil {
+		return err
+	}
+
+	// Write the matrix
+	if transposed {
+		for j := int64(0); j < cef.NumRows; j++ {
+			for i := int64(0); i < cef.NumColumns; i++ {
+				value := cef.Get(i, j)
+				if err := binary.Write(f, binary.LittleEndian, &value); err != nil {
+					return err
+				}
+			}
+		}
+	} else {
+		for i := int64(0); i < cef.NumColumns; i++ {
+			for j := int64(0); j < cef.NumRows; j++ {
+				value := cef.Get(i, j)
+				if err := binary.Write(f, binary.LittleEndian, &value); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// Currently the skip section is unused
+	nSkip := int64(0)
+	if err := binary.Write(f, binary.LittleEndian, &nSkip); err != nil {
+		return err
+	}
+
+	// Write the headers
+	nHeaders := int32(len(cef.Headers))
+	if err := binary.Write(f, binary.LittleEndian, &nHeaders); err != nil {
+		return err
+	}
+
+	for i := int32(0); i < nHeaders; i++ {
+		if err := writeString(cef.Headers[i].Name); err != nil {
+			return err
+		}
+		if err := writeString(cef.Headers[i].Value); err != nil {
+			return err
+		}
+	}
+
+	// Helper to write attributes
+	writeAttrs := func(attrs []Attribute) error {
+		var nAttrs = int32(len(attrs))
+		if err := binary.Write(f, binary.LittleEndian, &nAttrs); err != nil {
+			return err
+		}
+		for i := int32(0); i < nAttrs; i++ {
+			if err := writeString(attrs[i].Name); err != nil {
+				return err
+			}
+		}
+		for i := int32(0); i < nAttrs; i++ {
+			for j := 0; j < len(attrs[0].Values); j++ {
+				if err := writeString(attrs[i].Values[j]); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+	if transposed {
+		writeAttrs(cef.RowAttributes)
+		writeAttrs(cef.ColumnAttributes)
+	} else {
+		writeAttrs(cef.ColumnAttributes)
+		writeAttrs(cef.RowAttributes)
+	}
+
 	return nil
 }
 
@@ -38,7 +145,12 @@ func WriteAsCEF(cef *Cef, f *os.File, transposed bool) error {
 	}
 
 	// Make a vector to hold each line (we'll reuse it)
-	row := make([]string, int(math.Max(7, float64(cef.NumColumns+int64(len(cef.RowAttributes)+1)))))
+	var row []string
+	if transposed {
+		row = make([]string, int(math.Max(7, float64(cef.NumRows+int64(len(cef.ColumnAttributes)+1)))))
+	} else {
+		row = make([]string, int(math.Max(7, float64(cef.NumColumns+int64(len(cef.RowAttributes)+1)))))
+	}
 
 	// Write the header line
 	row[0] = "CEF"
@@ -48,6 +160,12 @@ func WriteAsCEF(cef *Cef, f *os.File, transposed bool) error {
 	row[4] = strconv.Itoa(len(cef.ColumnAttributes))
 	row[5] = strconv.Itoa(len(cef.RowAttributes))
 	row[6] = strconv.Itoa(int(cef.Flags))
+	if transposed {
+		row[2] = strconv.Itoa(int(cef.NumRows))
+		row[3] = strconv.Itoa(int(cef.NumColumns))
+		row[4] = strconv.Itoa(len(cef.RowAttributes))
+		row[5] = strconv.Itoa(len(cef.ColumnAttributes))
+	}
 	write(row)
 
 	// Write the headers
@@ -57,30 +175,57 @@ func WriteAsCEF(cef *Cef, f *os.File, transposed bool) error {
 		write(row)
 	}
 
-	// Write the column attributes
 	ralen := int64(len(cef.RowAttributes))
 	calen := int64(len(cef.ColumnAttributes))
-	for i := int64(0); i < calen; i++ {
-		row[ralen] = cef.ColumnAttributes[i].Name
-		for j := int64(0); j < cef.NumColumns; j++ {
-			row[j+ralen+1] = cef.ColumnAttributes[i].Values[j]
-		}
-		write(row)
-	}
 
-	// Write the row attributes and matrix
-	for i := int64(0); i < ralen; i++ {
-		row[i] = cef.RowAttributes[i].Name
-	}
-	write(row)
-	for i := int64(0); i < cef.NumRows; i++ {
-		for j := int64(0); j < ralen; j++ {
-			row[j] = cef.RowAttributes[j].Values[i]
-			for k := int64(0); k < cef.NumColumns; k++ {
-				row[k+ralen+1] = strconv.FormatFloat(float64(cef.Get(k, i)), 'f', -1, 64)
+	if transposed {
+		// Write the column attributes (from row attrs)
+		for i := int64(0); i < ralen; i++ {
+			row[calen] = cef.RowAttributes[i].Name
+			for j := int64(0); j < cef.NumRows; j++ {
+				row[j+calen+1] = cef.RowAttributes[i].Values[j]
 			}
+			write(row)
+		}
+
+		// Write the row attributes and matrix
+		for i := int64(0); i < calen; i++ {
+			row[i] = cef.ColumnAttributes[i].Name
 		}
 		write(row)
+		for i := int64(0); i < cef.NumColumns; i++ {
+			for j := int64(0); j < calen; j++ {
+				row[j] = cef.ColumnAttributes[j].Values[i]
+				for k := int64(0); k < cef.NumRows; k++ {
+					row[k+ralen+1] = strconv.FormatFloat(float64(cef.Get(k, i)), 'f', -1, 64)
+				}
+			}
+			write(row)
+		}
+	} else {
+		// Write the column attributes
+		for i := int64(0); i < calen; i++ {
+			row[ralen] = cef.ColumnAttributes[i].Name
+			for j := int64(0); j < cef.NumColumns; j++ {
+				row[j+ralen+1] = cef.ColumnAttributes[i].Values[j]
+			}
+			write(row)
+		}
+
+		// Write the row attributes and matrix
+		for i := int64(0); i < ralen; i++ {
+			row[i] = cef.RowAttributes[i].Name
+		}
+		write(row)
+		for i := int64(0); i < cef.NumRows; i++ {
+			for j := int64(0); j < ralen; j++ {
+				row[j] = cef.RowAttributes[j].Values[i]
+				for k := int64(0); k < cef.NumColumns; k++ {
+					row[k+ralen+1] = strconv.FormatFloat(float64(cef.Get(k, i)), 'f', -1, 64)
+				}
+			}
+			write(row)
+		}
 	}
 	return nil
 }

@@ -9,7 +9,8 @@ import (
 
 func main() {
 	// Define the command-line structure using Kingpin
-	var app = kingpin.New("cef", "ceftools v0.1 (C) 2015 Sten Linnarsson <http://linnarssonlab.org/>")
+	var versionString = fmt.Sprintf("ceftools v%v.%v (C) 2015 Sten Linnarsson <http://linnarssonlab.org/>", ceftools.MajorVersion, ceftools.MinorVersion)
+	var app = kingpin.New("cef", versionString)
 	var app_cef = app.Flag("cef", "Generate CEF as output, instead of CEB").Bool()
 	var app_transpose = app.Flag("transpose", "Transpose input before, and/or output after processing").Short('t').Default("none").Enum("none", "in", "out", "inout")
 	var info = app.Command("info", "Show a summary of the file contents")
@@ -30,7 +31,7 @@ func main() {
 	// Perform test
 	case test.FullCommand():
 		var cef = new(ceftools.Cef)
-		cef.NumColumns = 10
+		cef.NumColumns = 5
 		cef.NumRows = 10
 		cef.MajorVersion = 0
 		cef.MinorVersion = 1
@@ -41,16 +42,16 @@ func main() {
 		cef.Headers[1].Value = "Header value 2"
 		cef.ColumnAttributes = make([]ceftools.Attribute, 2)
 		cef.ColumnAttributes[0].Name = "CellID"
-		cef.ColumnAttributes[0].Values = make([]string, 10)
+		cef.ColumnAttributes[0].Values = make([]string, 5)
 		cef.ColumnAttributes[1].Name = "Well"
-		cef.ColumnAttributes[1].Values = make([]string, 10)
+		cef.ColumnAttributes[1].Values = make([]string, 5)
 		cef.RowAttributes = make([]ceftools.Attribute, 2)
 		cef.RowAttributes[0].Name = "Gene"
 		cef.RowAttributes[0].Values = make([]string, 10)
 		cef.RowAttributes[1].Name = "Chromosome"
 		cef.RowAttributes[1].Values = make([]string, 10)
-		cef.Matrix = make([]float32, 10*10)
-		ceftools.WriteAsCEF(cef, os.Stdout, false)
+		cef.Matrix = make([]float32, 10*5)
+		ceftools.WriteAsCEF(cef, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out"))
 		return
 
 	// Show info
