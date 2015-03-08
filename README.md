@@ -22,7 +22,6 @@ text files that can be easily parsed or imported into e.g. Excel. Not all featur
 ## Synopsis
 
 ```
-
 cef info            - overview of file contents
 cef join		  	- join two datasets by given identifier
 cef remove 			- remove attribute
@@ -46,7 +45,7 @@ Commands operate on rows by default. For example `remove` can be used to remove 
 
 ceftools transparently reads and distinguishes CEB and CEF files without any further specification of the input format. Thus, the input can be in either format, and it will just work.
 
-CEF files are tab-delimited text files in UTF-8 encoding. The first four characters are 'CEF\t' (that's a single tab character at then end), equivalent to the hexadecimal 4-byte number 0x43454609. There is no byte order mark (BOM).
+CEF files are tab-delimited text files in UTF-8 encoding. The first four characters are 'CEF\t' (that's a single tab character at the end), equivalent to the hexadecimal 4-byte number 0x43454609. There is no byte order mark (BOM).
 
 CEB files are binary. The first four bytes are UTF-8 encoded 'CEB\t' (that's a single tab character at the end), equivalent to the hexadecimal 4-byte number 0x43454209.
 
@@ -55,9 +54,9 @@ The first four bytes of a file therefore unambiguously indicate if it's a CEF or
 
 ### CEF file format
 
-Tab-delimited file with newline endings, UTF-8 encoding, no BOM. Carriage returns before newline characters are silently removed. Each row has the same number of tab-separated fields, equal to `(column count + row attribute count + 1)`. In other words, the entire file is a rectangular tab-delimited matrix. 
+Tab-delimited file with newline endings, UTF-8 encoding, no BOM. Carriage returns before newline characters are silently removed. Each row has the same number of tab-separated fields, equal to `max(7, column count + row attribute count + 1)`. In other words, the entire file is a rectangular tab-delimited matrix, with at least seven columns. 
 
-The first line defines the file structure. It begins 'CEF', followed by column count, row count, column attribute count, row attribute count, and the `Flags` value.
+The first line defines the file structure. It begins 'CEF', followed by header count, column count, row count, column attribute count, row attribute count, and the `Flags` value. 
 
 This is followed by header lines, which are name-value pairs, with the name in the first column and the value in the second. There are no restrictions on either the names or the values, except that they cannot contain tabs, newlines or carriage returns.
 
@@ -118,20 +117,14 @@ There is also a `Flags` field, currently unused
 	string Header #n value
 
 	int32	Column attribute count
-	string	Column attribute name #1 
+	string[]	Column attribute names 
 	string[] Column attribute #1 values (total equal to column count)
-	string	Column attribute name #2 
-	string[] Column attribute #2 values
 	...
-	string	Column attribute name #n 
 	string[] Column attribute #n values
 
 	int32	Row attribute count
-	string	Row attribute name #1
+	string[]	Row attribute names
 	string[] Row attribute #1 values (total equal to row count)
-	string	Row attribute name #2
-	string[] Row attribute #2 values
 	...
-	string	Row attribute name #n
 	string[] Row attribute #n values
 

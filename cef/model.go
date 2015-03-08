@@ -25,3 +25,11 @@ type CefFile struct {
 	ColumnAttributes []CefAttribute
 	Matrix           []float32
 }
+
+func (cf CefFile) Get(col int64, row int64) float32 {
+	return cf.Matrix[col+row*cf.NumColumns]
+}
+
+func (cf CefFile) Set(col int64, row int64, val float32) {
+	cf.Matrix[col+row*cf.NumColumns] = val
+}

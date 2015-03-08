@@ -4,16 +4,17 @@ import (
 	"encoding/binary"
 	"encoding/csv"
 	"errors"
+	"math"
 	"os"
 	"strconv"
 )
 
-func Read(f *os.File) (*CefFile, error) {
+func Read(f *os.File, transposed bool, skipMatrix bool) (*CefFile, error) {
 	var magic int32
 	binary.Read(f, binary.LittleEndian, &magic)
 
 	if magic == 0x43454209 { // "CEB\t"
-		return readCEB(f)
+		return readCEB(f, transposed, skipMatrix)
 	}
 	if magic == 0x43454609 { // "CEF\t"
 		return readCEF(f)
@@ -28,13 +29,59 @@ func WriteAsCEB(cf *CefFile, f *os.File, transposed bool) error {
 func WriteAsCEF(cf *CefFile, f *os.File, transposed bool) error {
 	w := csv.NewWriter(f)
 	w.Comma = '\t'
+	write := func(row []string) {
+		w.Write(row)
+		w.Flush()
+		for i := 0; i < len(row); i++ {
+			row[i] = ""
+		}
+	}
 
-	// Write the header
-	row := make([]string, int(cf.NumColumns)+len(cf.RowAttributes)+1)
+	// Make a vector to hold each line (we'll reuse it)
+	row := make([]string, int(math.Max(7, float64(cf.NumColumns+int64(len(cf.RowAttributes)+1)))))
+
+	// Write the header line
 	row[0] = "CEF"
 	row[1] = strconv.Itoa(len(cf.Headers))
 	row[2] = strconv.Itoa(int(cf.NumColumns))
+	row[3] = strconv.Itoa(int(cf.NumRows))
+	row[4] = strconv.Itoa(len(cf.ColumnAttributes))
+	row[5] = strconv.Itoa(len(cf.RowAttributes))
+	row[6] = strconv.Itoa(int(cf.Flags))
+	write(row)
 
+	// Write the headers
+	for i := 0; i < len(cf.Headers); i++ {
+		row[0] = cf.Headers[0].Name
+		row[1] = cf.Headers[1].Value
+		write(row)
+	}
+
+	// Write the column attributes
+	ralen := int64(len(cf.RowAttributes))
+	calen := int64(len(cf.ColumnAttributes))
+	for i := int64(0); i < calen; i++ {
+		row[ralen] = cf.ColumnAttributes[i].Name
+		for j := int64(0); j < cf.NumColumns; j++ {
+			row[j+ralen+1] = cf.ColumnAttributes[i].Values[j]
+		}
+		write(row)
+	}
+
+	// Write the row attributes and matrix
+	for i := int64(0); i < ralen; i++ {
+		row[i] = cf.RowAttributes[i].Name
+	}
+	write(row)
+	for i := int64(0); i < cf.NumRows; i++ {
+		for j := int64(0); j < ralen; j++ {
+			row[j] = cf.RowAttributes[j].Values[i]
+			for k := int64(0); k < cf.NumColumns; k++ {
+				row[k+ralen+1] = strconv.FormatFloat(float64(cf.Get(k, i)), 'f', -1, 64)
+			}
+		}
+		write(row)
+	}
 	return nil
 }
 
@@ -47,7 +94,7 @@ func readCEF(f *os.File) (*CefFile, error) {
 	return nil, nil
 }
 
-func readCEB(f *os.File, transposed bool) (*CefFile, error) {
+func readCEB(f *os.File, transposed bool, skipMatrix bool) (*CefFile, error) {
 	// Allocate a CF file struct
 	var cf CefFile
 
@@ -74,18 +121,23 @@ func readCEB(f *os.File, transposed bool) (*CefFile, error) {
 		return nil, err
 	}
 
-	// Read the matrix
-	cf.Matrix = make([]float32, cf.NumColumns*cf.NumRows)
-	for i := int64(0); i < cf.NumColumns; i++ {
-		for j := int64(0); j < cf.NumRows; j++ {
-			var value float32
-			if err = binary.Read(f, binary.LittleEndian, &value); err != nil {
-				return nil, err
-			}
-			if transposed {
-				cf.Matrix[i*cf.NumRows+j] = value // TODO: verify this
-			} else {
-				cf.Matrix[i+j*cf.NumColumns] = value
+	// Maybe we can skip the matrix?
+	if skipMatrix {
+		f.Seek(cf.NumColumns*cf.NumRows*4, 1)
+	} else {
+		// Read the matrix
+		cf.Matrix = make([]float32, cf.NumColumns*cf.NumRows)
+		for i := int64(0); i < cf.NumColumns; i++ {
+			for j := int64(0); j < cf.NumRows; j++ {
+				var value float32
+				if err = binary.Read(f, binary.LittleEndian, &value); err != nil {
+					return nil, err
+				}
+				if transposed {
+					cf.Matrix[i*cf.NumRows+j] = value // TODO: verify this
+				} else {
+					cf.Matrix[i+j*cf.NumColumns] = value
+				}
 			}
 		}
 	}
@@ -138,6 +190,8 @@ func readCEB(f *os.File, transposed bool) (*CefFile, error) {
 			return nil, err
 		}
 		cf.ColumnAttributes[i] = CefAttribute{colAttrName, make([]string, cf.NumColumns)}
+	}
+	for i := int32(0); i < nColAttrs; i++ {
 		for j := int64(0); j < cf.NumColumns; j++ {
 			if cf.ColumnAttributes[i].Values[j], err = readString(f); err != nil {
 				return nil, err
@@ -157,6 +211,8 @@ func readCEB(f *os.File, transposed bool) (*CefFile, error) {
 			return nil, err
 		}
 		cf.RowAttributes[i] = CefAttribute{rowAttrName, make([]string, cf.NumRows)}
+	}
+	for i := int32(0); i < nRowAttrs; i++ {
 		for j := int64(0); j < cf.NumRows; j++ {
 			if cf.RowAttributes[i].Values[j], err = readString(f); err != nil {
 				return nil, err
