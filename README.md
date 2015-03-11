@@ -41,6 +41,9 @@ Commands operate on rows by default. For example `remove` can be used to remove 
 
 ## CEF and CEB file formats
 
+Why do we need two file formats? CEF files are easy to read, easily imported into many applications, and easy to parse and generate. However, being text-based they can be slow to read. This is because the file must be read line-by-line, split up into tab-delimited fields, and then each field must be parsed e.g. to determine an expression value. For a large expression matrix, this can translate into a lot of slow parsing. In contrast, CEB files are binary, unreadable for humans, still easy to read and generate from software. Since CEB files store the expression matrix in a predictable binary form, it can simply be loaded into memory and used directly; this is potentially much faster than parsing the equivalent CEF file.
+
+
 ### Detecting the file format
 
 ceftools transparently reads and distinguishes CEB and CEF files without any further specification of the input format. Thus, the input can be in either format, and it will just work.

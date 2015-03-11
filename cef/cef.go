@@ -36,10 +36,10 @@ func main() {
 		cef.MajorVersion = 0
 		cef.MinorVersion = 1
 		cef.Headers = make([]ceftools.Header, 2)
-		cef.Headers[0].Name = "Header 1"
-		cef.Headers[0].Value = "Header value 1"
-		cef.Headers[1].Name = "Header 2"
-		cef.Headers[1].Value = "Header value 2"
+		cef.Headers[0].Name = "Tissue"
+		cef.Headers[0].Value = "Amygdala"
+		cef.Headers[1].Name = "Species"
+		cef.Headers[1].Value = "Mouse"
 		cef.ColumnAttributes = make([]ceftools.Attribute, 2)
 		cef.ColumnAttributes[0].Name = "CellID"
 		cef.ColumnAttributes[0].Values = make([]string, 5)
@@ -51,29 +51,37 @@ func main() {
 		cef.RowAttributes[1].Name = "Chromosome"
 		cef.RowAttributes[1].Values = make([]string, 10)
 		cef.Matrix = make([]float32, 10*5)
-		ceftools.WriteAsCEF(cef, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out"))
+		if *app_cef {
+			if err := ceftools.WriteAsCEF(cef, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out")); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
+		} else {
+			if err := ceftools.WriteAsCEB(cef, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out")); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
+		}
 		return
 
 	// Show info
 	case info.FullCommand():
-		var cef, err = ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"), true)
+		var cef, err = ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"), false)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			return
 		}
-		fmt.Fprintln(os.Stderr, "Version: %v.%v", cef.MajorVersion, cef.MinorVersion)
-		fmt.Fprintln(os.Stderr, "Columns: %v", cef.NumColumns)
-		fmt.Fprintln(os.Stderr, "Rows: %v", cef.NumRows)
-		fmt.Fprintln(os.Stderr, "Flags: %v", cef.Flags)
-		fmt.Fprintln(os.Stderr, "")
-		fmt.Fprintln(os.Stderr, "Headers:")
+		fmt.Fprintf(os.Stderr, "          Version: %v.%v\n", cef.MajorVersion, cef.MinorVersion)
+		fmt.Fprintf(os.Stderr, "          Columns: %v\n", cef.NumColumns)
+		fmt.Fprintf(os.Stderr, "             Rows: %v\n", cef.NumRows)
+		fmt.Fprintf(os.Stderr, "            Flags: %v\n", cef.Flags)
+		fmt.Fprintln(os.Stderr, "          Headers:")
 		for i := 0; i < len(cef.Headers); i++ {
-			fmt.Fprint(os.Stderr, "  ")
+			fmt.Fprint(os.Stderr, "                   ")
 			fmt.Fprint(os.Stderr, cef.Headers[i].Name)
 			fmt.Fprint(os.Stderr, " = ")
-			fmt.Fprintln(os.Stderr, cef.Headers[i].Value)
+			fmt.Fprintf(os.Stderr, cef.Headers[i].Value)
+			fmt.Fprint(os.Stderr, "\n")
 		}
-		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprint(os.Stderr, "\n")
 		fmt.Fprint(os.Stderr, "Column attributes: ")
 		for i := 0; i < len(cef.ColumnAttributes); i++ {
 			fmt.Fprint(os.Stderr, cef.ColumnAttributes[i].Name)
@@ -81,16 +89,16 @@ func main() {
 				fmt.Fprint(os.Stderr, ", ")
 			}
 		}
-		fmt.Fprint(os.Stderr, "Row attributes: ")
+		fmt.Fprint(os.Stderr, "\n")
+		fmt.Fprint(os.Stderr, "   Row attributes: ")
 		for i := 0; i < len(cef.RowAttributes); i++ {
 			fmt.Fprint(os.Stderr, cef.RowAttributes[i].Name)
 			if i != (len(cef.RowAttributes) - 1) {
 				fmt.Fprint(os.Stderr, ", ")
 			}
 		}
+		fmt.Fprintln(os.Stderr, "")
 
-		if *app_cef {
-		}
 		// 	cef.WriteAsCEF(cf, os.Stdout, true)
 		// } else {
 		// 	cef.WriteAsCEB(cf, os.Stdout, true)

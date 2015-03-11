@@ -17,6 +17,8 @@ const (
 const (
 	MajorVersion = 0
 	MinorVersion = 1
+	MagicCEB     = 0x09424543
+	MagicCEF     = 0x09464543
 )
 
 type Cef struct {
