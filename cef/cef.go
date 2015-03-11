@@ -51,6 +51,9 @@ func main() {
 		cef.RowAttributes[1].Name = "Chromosome"
 		cef.RowAttributes[1].Values = make([]string, 10)
 		cef.Matrix = make([]float32, 10*5)
+		cef.Set(0, 0, 1)
+		cef.Set(0, 1, 2)
+		cef.Set(0, 2, 3)
 		if *app_cef {
 			if err := ceftools.WriteAsCEF(cef, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out")); err != nil {
 				fmt.Fprintln(os.Stderr, err)
@@ -64,7 +67,7 @@ func main() {
 
 	// Show info
 	case info.FullCommand():
-		var cef, err = ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"), false)
+		var cef, err = ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"))
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			return

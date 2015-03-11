@@ -10,15 +10,15 @@ import (
 	"strconv"
 )
 
-func Read(f *os.File, transposed bool, skipMatrix bool) (*Cef, error) {
+func Read(f *os.File, transposed bool) (*Cef, error) {
 	var magic int32
 	binary.Read(f, binary.LittleEndian, &magic)
 
 	if magic == MagicCEB {
-		return readCEB(f, transposed, skipMatrix)
+		return readCEB(f, transposed)
 	}
 	if magic == MagicCEF {
-		return readCEF(f)
+		return readCEF(f, transposed)
 	}
 	return nil, errors.New("Unknown file format")
 }
@@ -320,7 +320,7 @@ func readCEF(f *os.File, transposed bool) (*Cef, error) {
 		if row[i] == "" {
 			return nil, errors.New(fmt.Sprintf("Row attribute name cannot be empty (name missing in column %v)", i+1))
 		}
-		cef.RowAttributes[i] = Attribute{row[i], make([]string, cef.NumColumns)}
+		cef.RowAttributes[i] = Attribute{row[i], make([]string, cef.NumRows)}
 	}
 
 	// Read the rows, with row attribute values
@@ -341,16 +341,28 @@ func readCEF(f *os.File, transposed bool) (*Cef, error) {
 			if err != nil {
 				return nil, errors.New(fmt.Sprintf("Invalid float32 value in column %v, row %v of the main matrix: %v", j+1, i+1, row[j+nRowAttrs]))
 			}
-			cef.Set(int64(j), int64(i), float32(val))
+			if transposed {
+				cef.Matrix[int64(j)*cef.NumRows+int64(i)] = float32(val)
+			} else {
+				cef.Matrix[int64(j)+int64(i)*cef.NumColumns] = float32(val)
+			}
 		}
 	}
 	cef.MajorVersion = MajorVersion
 	cef.MinorVersion = MinorVersion
-
+	// Exchange the rows and columns
+	if transposed {
+		temp1 := cef.NumRows
+		cef.NumRows = cef.NumColumns
+		cef.NumColumns = temp1
+		temp2 := cef.RowAttributes
+		cef.RowAttributes = cef.ColumnAttributes
+		cef.ColumnAttributes = temp2
+	}
 	return cef, nil
 }
 
-func readCEB(f *os.File, transposed bool, skipMatrix bool) (*Cef, error) {
+func readCEB(f *os.File, transposed bool) (*Cef, error) {
 	// Allocate a CF file struct
 	var cef Cef
 
@@ -377,23 +389,18 @@ func readCEB(f *os.File, transposed bool, skipMatrix bool) (*Cef, error) {
 		return nil, err
 	}
 
-	// Maybe we can skip the matrix?
-	if skipMatrix {
-		f.Seek(cef.NumColumns*cef.NumRows*4, 1)
-	} else {
-		// Read the matrix
-		cef.Matrix = make([]float32, cef.NumColumns*cef.NumRows)
-		for i := int64(0); i < cef.NumColumns; i++ {
-			for j := int64(0); j < cef.NumRows; j++ {
-				var value float32
-				if err = binary.Read(f, binary.LittleEndian, &value); err != nil {
-					return nil, err
-				}
-				if transposed {
-					cef.Matrix[i*cef.NumRows+j] = value // TODO: verify this
-				} else {
-					cef.Matrix[i+j*cef.NumColumns] = value
-				}
+	// Read the matrix
+	cef.Matrix = make([]float32, cef.NumColumns*cef.NumRows)
+	for i := int64(0); i < cef.NumColumns; i++ {
+		for j := int64(0); j < cef.NumRows; j++ {
+			var value float32
+			if err = binary.Read(f, binary.LittleEndian, &value); err != nil {
+				return nil, err
+			}
+			if transposed {
+				cef.Matrix[i*cef.NumRows+j] = value // TODO: verify this
+			} else {
+				cef.Matrix[i+j*cef.NumColumns] = value
 			}
 		}
 	}
