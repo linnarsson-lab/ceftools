@@ -24,11 +24,12 @@ text files that can be easily parsed or imported into e.g. Excel. Not all featur
 ```
 cef info            - overview of file contents
 cef join		  	- join two datasets by given identifier
-cef remove 			- remove attribute
-cef filter			- filter rows by given criteria
-cef normalize		- normalize rows
+cef drop 			- drop attribute(s)
+cef select			- select rows that match given criteria
+cef rescale			- rescale rows (e.g. to RPKM or log-transformed etc.)
 cef sort			- sort by attribute or column value, or by correlation
 cef aggregate		- calculate aggregate statistics for every row
+cef groupby			- group rows that share a row attribute, and aggregate values
 cef view			- print parts of the matrix
 ```
 
@@ -82,19 +83,31 @@ Example of a file with 1 header, 4 Row Attributes, 2 Column Attributes, 345 Rows
 
 ### CEB file format
 
-CEB files are binary and little endian. Strings are stored as UTF-8 with a leading int32 (signed 32-bit integer) length indicator, and no terminator. Values are stored as a vector of rows, as IEEE-754 float32 values. 
-
+CEB files are binary files that are intended to be unambiguously specified, easy to parse and easy to generate. 
 
 #### Version
 
 CEB files contain a minor/major version indicator. Major version changes are only backward compatible (newer parsers can read older files). Minor version changes are both forward and backward compatible (older parsers can read newer files). A compliant CEB parser should refuse to read a CEB file with a larger major version, but should ignore the minor version. 
-
 
 #### Skipped bytes and flags
 
 There is a section in the file, following the main matrix of values, that should simply be skipped. The purpose of this section is to make room for future file format extensions, while maintaining backward compatibility. A future v0.2 file format might store some data in the skipped section, and compliant v0.1 parsers will simply ignore it and still be able to read the file. 
 
 There is also a `Flags` field, currently unused
+
+#### Data types
+
+`string` is a UTF-8 encoded string with a leading int32 (signed 32-bit integer) length indicator, and no terminator. For example, the string "Hello, world!" is stored as [11, 'H','e','l','l','o',' ','w','o','r','d','!']. The length indicator gives the total number of bytes in the string, excluding the length indicator (it does not count the number of characters in the string, since some UTF-8 characters are stored as multi-byte sequences)
+
+`int32` is a signed 32-bit integer, 4 bytes, little endian
+
+`int64` is a signed 64-bit integer, 8 bytes, little endian
+
+`byte` is a single byte, 8 bits
+
+`float32` is a 32-bit floating point value, 4 bytes, IEEE-754 encoded
+
+`T[]` is an array of values of type T
 
 
 #### File structure
@@ -103,14 +116,14 @@ There is also a `Flags` field, currently unused
 	int32 	Major version (backward incompatible)
 	int32	Minor version (backward compatible)
 
-	int64	Column count
-	int64	Row count
+	int64	Column count (nCols)
+	int64	Row count (nRows)
 	int64 	Flags
 
-	float32[] Values, total of [Row count x Column count] values
+	float32[nRows x nCols]	Main matrix (by rows)
 
-	int64 		Skip length (number of bytes to skip)
-	byte[n] 	Skipped bytes (skipped bytes)
+	int64 		Skip length (nSkip)
+	byte[nSkip] 	Skipped bytes (ignored)
 
 	int32 Header entries count
 	string Header #1 name
@@ -119,15 +132,15 @@ There is also a `Flags` field, currently unused
 	string Header #n name
 	string Header #n value
 
-	int32	Column attribute count
-	string[]	Column attribute names 
-	string[] Column attribute #1 values (total equal to column count)
+	int32	Column attribute count (nColAttrs)
+	string[nColAttrs]	Column attribute names 
+	string[nCols] Column attribute #1 values
 	...
-	string[] Column attribute #n values
+	string[nCols] Column attribute #nColAttrs values
 
-	int32	Row attribute count
-	string[]	Row attribute names
-	string[] Row attribute #1 values (total equal to row count)
+	int32	Row attribute count (nRowAttrs)
+	string[nRowAttrs]	Row attribute names
+	string[nRows] Row attribute #1 values (total equal to row count)
 	...
-	string[] Row attribute #n values
+	string[nRows] Row attribute #nRowAttrs values
 

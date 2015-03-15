@@ -10,11 +10,27 @@ import (
 func main() {
 	// Define the command-line structure using Kingpin
 	var versionString = fmt.Sprintf("ceftools v%v.%v (C) 2015 Sten Linnarsson <http://linnarssonlab.org/>", ceftools.MajorVersion, ceftools.MinorVersion)
+
 	var app = kingpin.New("cef", versionString)
 	var app_cef = app.Flag("cef", "Generate CEF as output, instead of CEB").Bool()
-	var app_transpose = app.Flag("transpose", "Transpose input before, and/or output after processing").Short('t').Default("none").Enum("none", "in", "out", "inout")
+	var app_transpose = app.Flag("transpose", "Transpose matrix (in, out, inout or none)").Short('t').Default("none").Enum("none", "in", "out", "inout")
+
 	var info = app.Command("info", "Show a summary of the file contents")
+
 	var test = app.Command("test", "Perform an internal test")
+
+	var drop = app.Command("drop", "Remove attributes")
+	var drop_attrs = drop.Flag("attrs", "Row attribute(s) to remove (case-sensitive, comma-separated)").Short('a').String()
+	var drop_except = drop.Flag("except", "Row attribute(s) to keep (rest are dropped; case-sensitive, comma-separated)").Short('k').String()
+	var cmdselect = app.Command("select", "Select rows that match criteria (and drop the rest)")
+	var select_rows = cmdselect.Flag("range", "Select a range of rows (colon-separated, 1-based)").String()
+	var select_where = cmdselect.Flag("where", "Select rows with specific value for attribute ('attr=value')").String()
+	var select_not = cmdselect.Flag("not", "Invert selection").Bool()
+
+	var rescale = app.Command("rescale", "Rescale values by rows")
+	var rescale_method = rescale.Flag("method", "Method to use (log, standardize, zeromean, unitstd, tpm or rpkm)").Short('m').Required().Enum("log", "standardize", "zeromean", "unitstd", "tpm", "rpkm")
+	var rescale_length = rescale.Flag("length", "Indicate the name of the attribute that gives gene length (for RPKM)").String()
+
 	//	var join = app.Command("join", "Join two files based on an attribute used as key")
 	//	var join_other = join.Flag("other", "The file to which <STDIN> should be joined").Required().String()
 
@@ -27,6 +43,19 @@ func main() {
 
 	// Handle the sub-commands
 	switch kingpin.MustParse(parsed, nil) {
+	case drop.FullCommand():
+		print(drop_attrs)
+		print(drop_except)
+		return
+	case cmdselect.FullCommand():
+		print(select_not)
+		print(select_rows)
+		print(select_where)
+		return
+	case rescale.FullCommand():
+		print(rescale_length)
+		print(rescale_method)
+		return
 
 	// Perform test
 	case test.FullCommand():
@@ -101,10 +130,5 @@ func main() {
 			}
 		}
 		fmt.Fprintln(os.Stderr, "")
-
-		// 	cef.WriteAsCEF(cf, os.Stdout, true)
-		// } else {
-		// 	cef.WriteAsCEB(cf, os.Stdout, true)
-		// }
 	}
 }
