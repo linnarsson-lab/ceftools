@@ -4,6 +4,8 @@ Tools for manipulating cell expression binary (CEB) files, and for importing and
 
 **Note: ceftools is not yet ready for use, nor do I know when it will be**
 
+Download the most recent Mac OS X binary: [cef](cef/cef)
+
 ## Overview
 
 ceftools is a set of tools designed to manipulate large-scale gene expression data. It aims to be for gene 
