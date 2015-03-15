@@ -24,9 +24,11 @@ text files that can be easily parsed or imported into e.g. Excel. Not all featur
 Commands that have been implemented so far 
 
 ```
+cef help			- print help for the cef command
 cef info            - overview of file contents
 cef drop 			- drop attribute(s)
 cef export			- export as CEF
+cef rescale			- rescale rows (rpkm, tpm or log-transformed)
 ```
 
 Future commands
@@ -34,11 +36,10 @@ Future commands
 ```
 cef join		  	- join two datasets by given identifier
 cef select			- select rows that match given criteria
-cef rescale			- rescale rows (e.g. to RPKM or log-transformed etc.)
 cef sort			- sort by attribute or column value, or by correlation
 cef aggregate		- calculate aggregate statistics for every row
 cef groupby			- group rows that share a row attribute, and aggregate values
-cef view			- print parts of the matrix
+cef view			- interactively navigate the matrix
 ```
 
 Commands operate on rows by default. For example `drop` can be used to remove row attributes, but not column attributes. Every command accepts a `--transpose none|in|out|inout` parameter, which causes the CEB to be transposed before and/or after the operation is applied. This can be used to operate on columns. For example, to remove column attribute `Gene` then sort on column attribute `Length`:

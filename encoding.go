@@ -204,7 +204,7 @@ func WriteAsCEF(cef *Cef, f *os.File, transposed bool) error {
 			for j := int64(0); j < calen; j++ {
 				row[j] = cef.ColumnAttributes[j].Values[i]
 				for k := int64(0); k < cef.NumRows; k++ {
-					row[k+ralen+1] = strconv.FormatFloat(float64(cef.Get(k, i)), 'f', -1, 64)
+					row[k+ralen+1] = strconv.FormatFloat(float64(cef.Get(i, k)), 'f', -1, 64)
 				}
 			}
 			write(row)

@@ -40,3 +40,7 @@ func (cef Cef) Get(col int64, row int64) float32 {
 func (cef Cef) Set(col int64, row int64, val float32) {
 	cef.Matrix[col+row*cef.NumColumns] = val
 }
+
+func (cef Cef) GetRow(row int64) []float32 {
+	return cef.Matrix[row*cef.NumColumns : (row+1)*cef.NumColumns]
+}

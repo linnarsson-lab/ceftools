@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"github.com/alecthomas/kingpin"
 	"github.com/slinnarsson/ceftools"
+	"math"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -20,7 +22,7 @@ func main() {
 	var export = app.Command("export", "Export the file as text-based CEF")
 
 	var drop = app.Command("drop", "Remove attributes")
-	var drop_attrs = drop.Flag("attrs", "Row attribute(s) to remove (case-sensitive, comma-separated)").Short('a').String()
+	var drop_attrs = drop.Flag("attrs", "Row attribute(s) to remove (case-sensitive, comma-separated)").Short('a').Required().String()
 	var drop_except = drop.Flag("except", "Keep the given attributes instead of dropping them ").Bool()
 	var cmdselect = app.Command("select", "Select rows that match criteria (and drop the rest)")
 	var select_rows = cmdselect.Flag("range", "Select a range of rows (colon-separated, 1-based)").String()
@@ -28,7 +30,7 @@ func main() {
 	var select_not = cmdselect.Flag("not", "Invert selection").Bool()
 
 	var rescale = app.Command("rescale", "Rescale values by rows")
-	var rescale_method = rescale.Flag("method", "Method to use (log, standardize, zeromean, unitstd, tpm or rpkm)").Short('m').Required().Enum("log", "standardize", "zeromean", "unitstd", "tpm", "rpkm")
+	var rescale_method = rescale.Flag("method", "Method to use (log, tpm or rpkm)").Short('m').Required().Enum("log", "tpm", "rpkm")
 	var rescale_length = rescale.Flag("length", "Indicate the name of the attribute that gives gene length (for RPKM)").String()
 
 	//	var join = app.Command("join", "Join two files based on an attribute used as key")
@@ -93,8 +95,71 @@ func main() {
 		print(select_where)
 		return
 	case rescale.FullCommand():
-		print(rescale_length)
-		print(rescale_method)
+		// Read the input
+		var cef, err = ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			return
+		}
+
+		log_rescale := func(vals []float32) {
+			for i := 0; i < len(vals); i++ {
+				vals[i] = float32(math.Log10(float64(vals[i] + 1)))
+			}
+		}
+		tpm_rescale := func(vals []float32) {
+			sum := float32(0)
+			for i := 0; i < len(vals); i++ {
+				sum += vals[i]
+			}
+			if sum != 0 {
+				for i := 0; i < len(vals); i++ {
+					vals[i] = vals[i] * 1000000 / sum
+				}
+			}
+		}
+		rpkm_rescale := func(vals []float32, length float32) {
+			sum := float32(0)
+			for i := 0; i < len(vals); i++ {
+				sum += vals[i]
+			}
+			if sum != 0 {
+				for i := 0; i < len(vals); i++ {
+					vals[i] = vals[i] * 1000000 / sum / length
+				}
+			}
+		}
+		var length []string
+		if *rescale_length != "" {
+			for i := 0; i < len(cef.RowAttributes); i++ {
+				if cef.RowAttributes[i].Name == *rescale_length {
+					length = cef.RowAttributes[i].Values
+				}
+			}
+			if length == nil {
+				panic("Length attribute not found when attempting to rescale by rpkm")
+			}
+		}
+		for i := int64(0); i < cef.NumRows; i++ {
+			switch *rescale_method {
+			case "log":
+				log_rescale(cef.GetRow(i))
+				break
+			case "tpm":
+				tpm_rescale(cef.GetRow(i))
+			case "rpkm":
+				bp, err := strconv.Atoi(length[i])
+				if err != nil {
+					panic("Length attribute was not a valid integer (when attempting to rescale by rpkm)")
+				}
+				rpkm_rescale(cef.GetRow(i), float32(bp)/1000)
+			}
+		}
+
+		// Write the result
+		if err := ceftools.WriteAsCEB(cef, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out")); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
 		return
 
 	// Perform test
@@ -114,11 +179,13 @@ func main() {
 		cef.ColumnAttributes[0].Values = make([]string, 5)
 		cef.ColumnAttributes[1].Name = "Well"
 		cef.ColumnAttributes[1].Values = make([]string, 5)
-		cef.RowAttributes = make([]ceftools.Attribute, 2)
+		cef.RowAttributes = make([]ceftools.Attribute, 3)
 		cef.RowAttributes[0].Name = "Gene"
 		cef.RowAttributes[0].Values = make([]string, 10)
 		cef.RowAttributes[1].Name = "Chromosome"
 		cef.RowAttributes[1].Values = make([]string, 10)
+		cef.RowAttributes[2].Name = "Length"
+		cef.RowAttributes[2].Values = []string{"1200", "1300", "1400", "1700", "1920", "130", "800", "7800", "1100", "200"}
 		cef.Matrix = make([]float32, 10*5)
 		cef.Set(0, 0, 1)
 		cef.Set(0, 1, 2)
