@@ -4,7 +4,7 @@ Tools for manipulating cell expression binary (CEB) files, and for importing and
 
 **Note: ceftools is not yet ready for use, nor do I know when it will be**
 
-Download the most recent Mac OS X binary: [cef](cef/cef)
+Download the most recent [Mac OS X binary](cef/cef), named `cef`. To use it, click `View raw` and save it to you computer. In your Terminal, locate the file, make it executable (`chmod uga+x ./cef`) and then run `./cef help`.
 
 ## Overview
 
