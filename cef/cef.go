@@ -197,6 +197,9 @@ func main() {
 			for i := 0; i < len(vals); i++ {
 				sum += vals[i]
 			}
+			if length == 0 {
+				length = 1
+			}
 			if sum != 0 {
 				for i := 0; i < len(vals); i++ {
 					vals[i] = vals[i] * 1000000 / sum / length
