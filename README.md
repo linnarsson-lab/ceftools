@@ -33,13 +33,13 @@ cef import			- input as CEF or CEB, output as CEB
 cef export			- input as CEB or CEF, output as CEF
 cef rescale			- rescale rows (rpkm, tpm or log-transformed)
 cef join		  	- join two datasets by given attributes
+cef sort			- sort by row attribute or by specific column
 ```
 
 Future commands
 
 ```
 cef select			- select rows that match given criteria
-cef sort			- sort by row attribute or by specific column
 cef aggregate		- calculate aggregate statistics for every row
 cef groupby			- group rows that share a row attribute, and aggregate values
 cef view			- interactively navigate the matrix
@@ -163,5 +163,6 @@ There is also a `Flags` field, currently unused
 	Drop headers
 	Add headers
 	Add constant attribute
+	Sort by specific column
 	Parsers and generators for R, Python, MATLAB, Mathematica, Java, 
 
