@@ -21,10 +21,18 @@ text files that can be easily parsed or imported into e.g. Excel. Not all featur
 
 ## Synopsis
 
+Commands that have been implemented so far 
+
 ```
 cef info            - overview of file contents
-cef join		  	- join two datasets by given identifier
 cef drop 			- drop attribute(s)
+cef export			- export as CEF
+```
+
+Future commands
+
+```
+cef join		  	- join two datasets by given identifier
 cef select			- select rows that match given criteria
 cef rescale			- rescale rows (e.g. to RPKM or log-transformed etc.)
 cef sort			- sort by attribute or column value, or by correlation
@@ -33,10 +41,10 @@ cef groupby			- group rows that share a row attribute, and aggregate values
 cef view			- print parts of the matrix
 ```
 
-Commands operate on rows by default. For example `remove` can be used to remove row attributes, but not column attributes. Every command accepts a `--transpose none|in|out|inout` parameter, which causes the CEB to be transposed before and/or after the operation is applied. This can be used to operate on columns. For example, to remove column attribute `Age` then sort on column attribute `Length`:
+Commands operate on rows by default. For example `drop` can be used to remove row attributes, but not column attributes. Every command accepts a `--transpose none|in|out|inout` parameter, which causes the CEB to be transposed before and/or after the operation is applied. This can be used to operate on columns. For example, to remove column attribute `Gene` then sort on column attribute `Length`:
 
 ```
-< infile.ceb cef --transpose in remove Age | cef --transpose out sort Length > outfile.ceb 
+< infile.ceb cef --transpose in drop Gene | cef --transpose out sort Length > outfile.ceb 
 ```
 
 
