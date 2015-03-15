@@ -1,5 +1,9 @@
 package ceftools
 
+import (
+	"errors"
+)
+
 type Attribute struct {
 	Name   string
 	Values []string
@@ -43,4 +47,139 @@ func (cef Cef) Set(col int64, row int64, val float32) {
 
 func (cef Cef) GetRow(row int64) []float32 {
 	return cef.Matrix[row*cef.NumColumns : (row+1)*cef.NumColumns]
+}
+
+// Join performs a database-style join of two Cef instances, by
+// lining up rows that have the same value for the given attributes.
+// The 'mode' parameter determines the type of join performed: left join (mode "left"),
+// right join (mode "right") or inner join (mode "inner")
+func (left Cef) Join(right *Cef, leftAttr string, rightAttr string) (*Cef, error) {
+	// Find the indexes
+	var leftIndex []string
+	for i := 0; i < len(left.RowAttributes); i++ {
+		if left.RowAttributes[i].Name == leftAttr {
+			leftIndex = left.RowAttributes[i].Values
+		}
+	}
+	var rightIndex []string
+	for i := 0; i < len(right.RowAttributes); i++ {
+		if right.RowAttributes[i].Name == rightAttr {
+			rightIndex = right.RowAttributes[i].Values
+		}
+	}
+	if rightIndex == nil || leftIndex == nil {
+		return nil, errors.New("Index not found when attempting to join " + leftAttr + " " + rightAttr)
+	}
+
+	leftKeys := map[string]int{}
+
+	// Hash the keys of the left table, pointing to the corresponding row index
+	for i := 0; i < len(leftIndex); i++ {
+		if leftKeys[leftIndex[i]] == 0 { // Don't add keys twice, to ensure the join will prefer earlier rows
+			leftKeys[leftIndex[i]] = i + 1 // Store as index + 1, so that we can distinguish the zero value
+		}
+	}
+
+	// Prepare the result
+	result := new(Cef)
+	result.MajorVersion = left.MajorVersion
+	result.MinorVersion = left.MinorVersion
+	result.NumColumns = left.NumColumns + right.NumColumns
+	result.Headers = left.Headers
+	result.Flags = left.Flags
+	result.Matrix = make([]float32, 0)
+	result.ColumnAttributes = make([]Attribute, len(left.ColumnAttributes)+len(right.ColumnAttributes))
+	// Make empty column attributes
+	for i := 0; i < len(left.ColumnAttributes); i++ {
+		result.ColumnAttributes[i].Name = left.ColumnAttributes[i].Name
+		result.ColumnAttributes[i].Values = make([]string, 0)
+	}
+	for i := 0; i < len(right.ColumnAttributes); i++ {
+		result.ColumnAttributes[i+len(left.ColumnAttributes)].Name = right.ColumnAttributes[i].Name
+		result.ColumnAttributes[i+len(left.ColumnAttributes)].Values = make([]string, 0)
+	}
+	// Make empty row attributes
+	result.RowAttributes = make([]Attribute, len(left.RowAttributes)+len(right.RowAttributes))
+	for i := 0; i < len(left.RowAttributes); i++ {
+		result.RowAttributes[i].Name = left.RowAttributes[i].Name
+		result.RowAttributes[i].Values = make([]string, 0)
+	}
+	for i := 0; i < len(right.RowAttributes); i++ {
+		result.RowAttributes[i+len(left.RowAttributes)].Name = right.RowAttributes[i].Name
+		result.RowAttributes[i+len(left.RowAttributes)].Values = make([]string, 0)
+	}
+
+	// Join the column attributes
+	for j := 0; j < len(left.ColumnAttributes); j++ {
+		result.ColumnAttributes[j].Values = append(result.ColumnAttributes[j].Values, left.ColumnAttributes[j].Values...)
+		result.ColumnAttributes[j].Values = append(result.ColumnAttributes[j].Values, make([]string, right.NumColumns)...)
+	}
+	for j := 0; j < len(right.ColumnAttributes); j++ {
+		result.ColumnAttributes[j+len(left.ColumnAttributes)].Values = append(result.ColumnAttributes[j+len(left.ColumnAttributes)].Values, make([]string, left.NumColumns)...)
+		result.ColumnAttributes[j+len(left.ColumnAttributes)].Values = append(result.ColumnAttributes[j+len(left.ColumnAttributes)].Values, right.ColumnAttributes[j].Values...)
+	}
+
+	// For each row of the right table, look it up in the hash
+	numRows := int64(0)
+	for i := 0; i < len(rightIndex); i++ {
+		ix := leftKeys[rightIndex[i]]
+		if ix != 0 {
+			// We have a match; append one row to the result
+			numRows++
+			leftKeys[rightIndex[i]] = 0 // Delete the key to prevent future matches (skip if doing right join?)
+			result.Matrix = append(result.Matrix, left.GetRow(int64(ix-1))...)
+			result.Matrix = append(result.Matrix, right.GetRow(int64(i))...)
+
+			// Append to the row attributes
+			for j := 0; j < len(left.RowAttributes); j++ {
+				result.RowAttributes[j].Values = append(result.RowAttributes[j].Values, left.RowAttributes[j].Values[ix-1])
+			}
+			for j := 0; j < len(right.RowAttributes); j++ {
+				result.RowAttributes[j+len(left.RowAttributes)].Values = append(result.RowAttributes[j+len(left.RowAttributes)].Values, right.RowAttributes[j].Values[i])
+			}
+		}
+	}
+	result.NumRows = numRows
+
+	// Merge duplicate column attributes
+	temp := make([]Attribute, 0)
+	for i := 0; i < len(result.ColumnAttributes); i++ {
+		// Check if this attribute has already been appended
+		found := false
+		for j := 0; j < i; j++ {
+			if result.ColumnAttributes[i].Name == result.ColumnAttributes[j].Name {
+				found = true
+				// Merge values
+				for k := 0; k < len(result.ColumnAttributes[j].Values); k++ {
+					if result.ColumnAttributes[j].Values[k] == "" {
+						result.ColumnAttributes[j].Values[k] = result.ColumnAttributes[i].Values[k]
+					}
+				}
+				break
+			}
+		}
+		if !found {
+			temp = append(temp, result.ColumnAttributes[i])
+		}
+	}
+	result.ColumnAttributes = temp
+
+	// Drop duplicate row attributes
+	temp = make([]Attribute, 0)
+	for i := 0; i < len(result.RowAttributes); i++ {
+		// Check if this attribute has already been appended
+		found := false
+		for j := 0; j < i; j++ {
+			if result.RowAttributes[i].Name == result.RowAttributes[j].Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			temp = append(temp, result.RowAttributes[i])
+		}
+	}
+	result.RowAttributes = temp
+
+	return result, nil
 }

@@ -20,6 +20,7 @@ func main() {
 	var info = app.Command("info", "Show a summary of the file contents")
 	var test = app.Command("test", "Perform an internal test")
 	var export = app.Command("export", "Export the file as text-based CEF")
+	var cmdimport = app.Command("import", "Simply copy the input (CEF or CEB) to the output (CEB)")
 
 	var drop = app.Command("drop", "Remove attributes")
 	var drop_attrs = drop.Flag("attrs", "Row attribute(s) to remove (case-sensitive, comma-separated)").Short('a').Required().String()
@@ -33,8 +34,9 @@ func main() {
 	var rescale_method = rescale.Flag("method", "Method to use (log, tpm or rpkm)").Short('m').Required().Enum("log", "tpm", "rpkm")
 	var rescale_length = rescale.Flag("length", "Indicate the name of the attribute that gives gene length (for RPKM)").String()
 
-	//	var join = app.Command("join", "Join two files based on an attribute used as key")
-	//	var join_other = join.Flag("other", "The file to which <STDIN> should be joined").Required().String()
+	var join = app.Command("join", "Join two files based on given attributes")
+	var join_other = join.Flag("with", "The file to which the input should be joined").Required().String()
+	var join_on = join.Flag("on", "The attributes on which to join, of form 'attr1=attr2'").Required().String()
 
 	// Parse the command line
 	var parsed, err = app.Parse(os.Args[1:])
@@ -45,6 +47,52 @@ func main() {
 
 	// Handle the sub-commands
 	switch kingpin.MustParse(parsed, nil) {
+	case join.FullCommand():
+		// Read the input
+		left, err := ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			return
+		}
+		// Read the right (to be joined)
+		f, err := os.Open(*join_other)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			return
+		}
+		defer f.Close()
+		right, err := ceftools.Read(f, (*app_transpose == "inout") || (*app_transpose == "in"))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			return
+		}
+		// Perform the join
+		attrs := strings.Split(*join_on, "=")
+		if len(attrs) != 2 {
+			fmt.Fprintln(os.Stderr, "--on 'attr1=attr2' was incorrectly specified")
+		}
+		cef, err := left.Join(right, attrs[0], attrs[1])
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			return
+		}
+		// Write the CEB file
+		if err := ceftools.WriteAsCEB(cef, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out")); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		return
+	case cmdimport.FullCommand():
+		// Read the input
+		var cef, err = ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			return
+		}
+		// Write the CEB file
+		if err := ceftools.WriteAsCEB(cef, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out")); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		return
 	case export.FullCommand():
 		// Read the input
 		var cef, err = ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"))
@@ -176,14 +224,14 @@ func main() {
 		cef.Headers[1].Value = "Mouse"
 		cef.ColumnAttributes = make([]ceftools.Attribute, 2)
 		cef.ColumnAttributes[0].Name = "CellID"
-		cef.ColumnAttributes[0].Values = make([]string, 5)
+		cef.ColumnAttributes[0].Values = []string{"A", "B", "C", "D", "E"}
 		cef.ColumnAttributes[1].Name = "Well"
-		cef.ColumnAttributes[1].Values = make([]string, 5)
+		cef.ColumnAttributes[1].Values = []string{"A01", "B03", "C09", "D12", "E21"}
 		cef.RowAttributes = make([]ceftools.Attribute, 3)
 		cef.RowAttributes[0].Name = "Gene"
-		cef.RowAttributes[0].Values = make([]string, 10)
+		cef.RowAttributes[0].Values = []string{"Actb", "Gapdh", "Synpr", "Pou3f2", "Bdnf", "Ngf", "Sox11", "Olig1", "Olig2", "Foxj1"}
 		cef.RowAttributes[1].Name = "Chromosome"
-		cef.RowAttributes[1].Values = make([]string, 10)
+		cef.RowAttributes[1].Values = []string{"Chr1", "Chr2", "Chr3", "Chr4", "Chr5", "Chr1", "Chr2", "Chr3", "Chr4", "Chr5"}
 		cef.RowAttributes[2].Name = "Length"
 		cef.RowAttributes[2].Values = []string{"1200", "1300", "1400", "1700", "1920", "130", "800", "7800", "1100", "200"}
 		cef.Matrix = make([]float32, 10*5)

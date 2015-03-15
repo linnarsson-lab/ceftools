@@ -27,14 +27,15 @@ Commands that have been implemented so far
 cef help			- print help for the cef command
 cef info            - overview of file contents
 cef drop 			- drop attribute(s)
-cef export			- export as CEF
+cef import			- input as CEF or CEB, output as CEB
+cef export			- input as CEB or CEF, output as CEF
 cef rescale			- rescale rows (rpkm, tpm or log-transformed)
+cef join		  	- join two datasets by given attributes
 ```
 
 Future commands
 
 ```
-cef join		  	- join two datasets by given identifier
 cef select			- select rows that match given criteria
 cef sort			- sort by attribute or column value, or by correlation
 cef aggregate		- calculate aggregate statistics for every row
