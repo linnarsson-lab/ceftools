@@ -42,6 +42,7 @@ Future commands
 cef select			- select rows that match given criteria
 cef aggregate		- calculate aggregate statistics for every row
 cef groupby			- group rows that share a row attribute, and aggregate values
+cef validate		- verify that the input file conforms to the CEB or CEF standard
 cef view			- interactively navigate the matrix
 ```
 
@@ -164,5 +165,9 @@ There is also a `Flags` field, currently unused
 	Add headers
 	Add constant attribute
 	Sort by specific column
+	Sort by cv/mean offset (https://github.com/glycerine/zettalm)
 	Parsers and generators for R, Python, MATLAB, Mathematica, Java, 
+	Test suite for parsers and generators
+	Validator for CEF/CEB files
+	Cloud-based dataset manager
 

@@ -42,6 +42,7 @@ func main() {
 	var sort_by = sort.Flag("by", "The attribute or column ('column=value') to sort by").Required().String()
 	var sort_reverse = sort.Flag("reverse", "Sort in reverse order").Short('r').Bool()
 	var sort_numerical = sort.Flag("numerical", "Numerical sort (default: alphabetical)").Short('n').Bool()
+	var sort_bycvmean = sort.Flag("cvmean", "Sort by offset to a CV-vs-mean least-squares fit").Bool()
 
 	// Parse the command line
 	var parsed, err = app.Parse(os.Args[1:])
