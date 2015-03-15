@@ -19,8 +19,8 @@ func main() {
 
 	var info = app.Command("info", "Show a summary of the file contents")
 	var test = app.Command("test", "Perform an internal test")
-	var export = app.Command("export", "Export the file as text-based CEF")
-	var cmdimport = app.Command("import", "Simply copy the input (CEF or CEB) to the output (CEB)")
+	var export = app.Command("export", "Export the input (CEF or CEB) as text-based CEF")
+	var cmdimport = app.Command("import", "Copy the input (CEF or CEB) to the output (CEB)")
 
 	var drop = app.Command("drop", "Remove attributes")
 	var drop_attrs = drop.Flag("attrs", "Row attribute(s) to remove (case-sensitive, comma-separated)").Short('a').Required().String()
@@ -38,6 +38,11 @@ func main() {
 	var join_other = join.Flag("with", "The file to which the input should be joined").Required().String()
 	var join_on = join.Flag("on", "The attributes on which to join, of form 'attr1=attr2'").Required().String()
 
+	var sort = app.Command("sort", "Sort by row attribute or by specific column")
+	var sort_by = sort.Flag("by", "The attribute or column ('column=value') to sort by").Required().String()
+	var sort_reverse = sort.Flag("reverse", "Sort in reverse order").Short('r').Bool()
+	var sort_numerical = sort.Flag("numerical", "Numerical sort (default: alphabetical)").Short('n').Bool()
+
 	// Parse the command line
 	var parsed, err = app.Parse(os.Args[1:])
 	if err != nil {
@@ -47,6 +52,27 @@ func main() {
 
 	// Handle the sub-commands
 	switch kingpin.MustParse(parsed, nil) {
+	case sort.FullCommand():
+		// Read the input
+		cef, err := ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			return
+		}
+		var result *ceftools.Cef
+		if *sort_numerical {
+			result, err = cef.SortByRowAttributeNumerical(*sort_by, *sort_reverse)
+		} else {
+			result, err = cef.SortByRowAttribute(*sort_by, *sort_reverse)
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+		}
+		// Write the CEB file
+		if err := ceftools.WriteAsCEB(result, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out")); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		return
 	case join.FullCommand():
 		// Read the input
 		left, err := ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"))

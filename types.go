@@ -2,6 +2,8 @@ package ceftools
 
 import (
 	"errors"
+	"sort"
+	"strconv"
 )
 
 type Attribute struct {
@@ -47,6 +49,140 @@ func (cef Cef) Set(col int64, row int64, val float32) {
 
 func (cef Cef) GetRow(row int64) []float32 {
 	return cef.Matrix[row*cef.NumColumns : (row+1)*cef.NumColumns]
+}
+
+type stringRec struct {
+	value string
+	index int64
+}
+type indexedStrings []stringRec
+
+func (a indexedStrings) Len() int           { return len(a) }
+func (a indexedStrings) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a indexedStrings) Less(i, j int) bool { return a[i].value < a[j].value }
+
+func (cef Cef) SortByRowAttribute(attr string, reverse bool) (*Cef, error) {
+	// Find the indexes
+	var index []string
+	for i := 0; i < len(cef.RowAttributes); i++ {
+		if cef.RowAttributes[i].Name == attr {
+			index = cef.RowAttributes[i].Values
+		}
+	}
+	if index == nil {
+		return nil, errors.New("Attribute not found when attempting to sort: " + attr)
+	}
+
+	// Collect the values to be sorted
+	recs := make([]stringRec, len(index))
+	for i := int64(0); i < int64(len(index)); i++ {
+		recs[i] = stringRec{index[i], i}
+	}
+	// Sort them
+	sort.Sort(indexedStrings(recs))
+
+	// Make the resulting Cef
+	result := new(Cef)
+	result.MajorVersion = cef.MajorVersion
+	result.MinorVersion = cef.MinorVersion
+	result.NumColumns = cef.NumColumns
+	result.NumRows = cef.NumRows
+	result.Headers = cef.Headers
+	result.Flags = cef.Flags
+	result.Matrix = make([]float32, 0)
+	result.ColumnAttributes = cef.ColumnAttributes
+	result.RowAttributes = make([]Attribute, len(cef.RowAttributes))
+	for i := 0; i < len(cef.RowAttributes); i++ {
+		result.RowAttributes[i].Name = cef.RowAttributes[i].Name
+		result.RowAttributes[i].Values = make([]string, len(result.RowAttributes[i].Values))
+	}
+	if reverse {
+		for i := cef.NumRows - 1; i >= 0; i-- {
+			from := recs[i].index
+			result.Matrix = append(result.Matrix, cef.GetRow(from)...)
+			for j := 0; j < len(cef.RowAttributes); j++ {
+				result.RowAttributes[j].Values = append(result.RowAttributes[j].Values, cef.RowAttributes[j].Values[from])
+			}
+		}
+	} else {
+		for i := int64(0); i < cef.NumRows; i++ {
+			from := recs[i].index
+			result.Matrix = append(result.Matrix, cef.GetRow(from)...)
+			for j := 0; j < len(cef.RowAttributes); j++ {
+				result.RowAttributes[j].Values = append(result.RowAttributes[j].Values, cef.RowAttributes[j].Values[from])
+			}
+		}
+	}
+	return result, nil
+}
+
+type numberRec struct {
+	value float32
+	index int64
+}
+type indexedNumbers []numberRec
+
+func (a indexedNumbers) Len() int           { return len(a) }
+func (a indexedNumbers) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a indexedNumbers) Less(i, j int) bool { return a[i].value < a[j].value }
+
+func (cef Cef) SortByRowAttributeNumerical(attr string, reverse bool) (*Cef, error) {
+	// Find the indexes
+	var index []string
+	for i := 0; i < len(cef.RowAttributes); i++ {
+		if cef.RowAttributes[i].Name == attr {
+			index = cef.RowAttributes[i].Values
+		}
+	}
+	if index == nil {
+		return nil, errors.New("Attribute not found when attempting to sort: " + attr)
+	}
+
+	// Collect the values to be sorted
+	recs := make([]numberRec, len(index))
+	for i := int64(0); i < int64(len(index)); i++ {
+		value, err := strconv.ParseFloat(index[i], 32)
+		if err != nil {
+			value = 0
+		}
+		recs[i] = numberRec{float32(value), i}
+	}
+	// Sort them
+	sort.Sort(indexedNumbers(recs))
+
+	// Make the resulting Cef
+	result := new(Cef)
+	result.MajorVersion = cef.MajorVersion
+	result.MinorVersion = cef.MinorVersion
+	result.NumColumns = cef.NumColumns
+	result.NumRows = cef.NumRows
+	result.Headers = cef.Headers
+	result.Flags = cef.Flags
+	result.Matrix = make([]float32, 0)
+	result.ColumnAttributes = cef.ColumnAttributes
+	result.RowAttributes = make([]Attribute, len(cef.RowAttributes))
+	for i := 0; i < len(cef.RowAttributes); i++ {
+		result.RowAttributes[i].Name = cef.RowAttributes[i].Name
+		result.RowAttributes[i].Values = make([]string, len(result.RowAttributes[i].Values))
+	}
+	if reverse {
+		for i := cef.NumRows - 1; i >= 0; i-- {
+			from := recs[i].index
+			result.Matrix = append(result.Matrix, cef.GetRow(from)...)
+			for j := 0; j < len(cef.RowAttributes); j++ {
+				result.RowAttributes[j].Values = append(result.RowAttributes[j].Values, cef.RowAttributes[j].Values[from])
+			}
+		}
+	} else {
+		for i := int64(0); i < cef.NumRows; i++ {
+			from := recs[i].index
+			result.Matrix = append(result.Matrix, cef.GetRow(from)...)
+			for j := 0; j < len(cef.RowAttributes); j++ {
+				result.RowAttributes[j].Values = append(result.RowAttributes[j].Values, cef.RowAttributes[j].Values[from])
+			}
+		}
+	}
+	return result, nil
 }
 
 // Join performs a database-style join of two Cef instances, by
