@@ -128,19 +128,19 @@ There is also a `Flags` field, currently unused
 	int32					Header entries count
 	string					Header #1 name
 	string 					Header #1 value
-	...
+	...						...
 	string 					Header #n name
 	string 					Header #n value
 
 	int32					Column attribute count (nColAttrs)
 	string[nColAttrs]		Column attribute names 
 	string[nCols] 			Column attribute #1 values
-	...
+	...						...
 	string[nCols] 			Column attribute #nColAttrs values
 
 	int32					Row attribute count (nRowAttrs)
 	string[nRowAttrs]		Row attribute names
 	string[nRows] 			Row attribute #1 values (total equal to row count)
-	...
+	...						...
 	string[nRows] 			Row attribute #nRowAttrs values
 
