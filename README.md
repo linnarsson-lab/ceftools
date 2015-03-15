@@ -154,3 +154,10 @@ There is also a `Flags` field, currently unused
 	...						...
 	string[nRows] 			Row attribute #nRowAttrs values
 
+### To-do list
+
+Merge headers when joining
+Left, right joins
+Drop headers
+Add headers
+Add constant attribute
