@@ -39,7 +39,7 @@ Future commands
 
 ```
 cef select			- select rows that match given criteria
-cef sort			- sort by attribute or column value, or by correlation
+cef sort			- sort by row attribute or by specific column
 cef aggregate		- calculate aggregate statistics for every row
 cef groupby			- group rows that share a row attribute, and aggregate values
 cef view			- interactively navigate the matrix
@@ -61,16 +61,16 @@ Why do we need two file formats? CEF files are easy to read, easily imported int
 
 ceftools transparently reads and distinguishes CEB and CEF files without any further specification of the input format. Thus, the input can be in either format, and it will just work.
 
-CEF files are tab-delimited text files in UTF-8 encoding. The first four characters are 'CEF\t' (that's a single tab character at the end), equivalent to the hexadecimal 4-byte number 0x43454609. There is no byte order mark (BOM).
+CEF files are tab-delimited text files in [UTF-8](http://en.wikipedia.org/wiki/UTF-8) encoding. The first four characters are 'CEF\t' (that's a single tab character at the end), equivalent to the hexadecimal 4-byte number 0x09464543. There is no byte order mark (BOM).
 
-CEB files are binary. The first four bytes are UTF-8 encoded 'CEB\t' (that's a single tab character at the end), equivalent to the hexadecimal 4-byte number 0x43454209.
+CEB files are binary. The first four bytes are [UTF-8](http://en.wikipedia.org/wiki/UTF-8) encoded 'CEB\t' (that's a single tab character at the end), equivalent to the hexadecimal 4-byte number 0x09424543.
 
 The first four bytes of a file therefore unambiguously indicate if it's a CEF or CEB file (assuming it's known to be one of the two).
 
 
 ### CEF file format
 
-Tab-delimited file with newline endings, UTF-8 encoding, no BOM. Carriage returns before newline characters are silently removed. Each row has the same number of tab-separated fields, equal to `max(7, column count + row attribute count + 1)`. In other words, the entire file is a rectangular tab-delimited matrix, with at least seven columns. 
+Tab-delimited file with newline endings, [UTF-8](http://en.wikipedia.org/wiki/UTF-8) encoding, no [BOM](http://en.wikipedia.org/wiki/Byte_order_mark). Carriage returns before newline characters are silently removed. Each row has the same number of tab-separated fields, equal to `max(7, column count + row attribute count + 1)`. In other words, the entire file is a rectangular tab-delimited matrix, with at least seven columns. 
 
 The first line defines the file structure. It begins 'CEF', followed by header count, column count, row count, column attribute count, row attribute count, and the `Flags` value. 
 
@@ -109,15 +109,15 @@ There is also a `Flags` field, currently unused
 
 #### Data types
 
-`string` is a UTF-8 encoded string with a leading int32 (signed 32-bit integer) length indicator, and no terminator. For example, the string "Hello, world!" is stored as [11, 'H','e','l','l','o',' ','w','o','r','d','!']. The length indicator gives the total number of bytes in the string, excluding the length indicator (it does not count the number of characters in the string, since some UTF-8 characters are stored as multi-byte sequences)
+`string` is a [UTF-8](http://en.wikipedia.org/wiki/UTF-8) encoded string with a leading int32 (signed 32-bit integer) length indicator, and no terminator. For example, the string "Hello, world!" is stored as [11, 'H','e','l','l','o',' ','w','o','r','d','!']. The length indicator gives the total number of bytes in the string, excluding the length indicator (it does not count the number of characters in the string, since some UTF-8 characters are stored as multi-byte sequences)
 
-`int32` is a signed 32-bit integer, 4 bytes, little endian
+`int32` is a signed 32-bit integer, 4 bytes, [little endian](http://en.wikipedia.org/wiki/Endianness)
 
-`int64` is a signed 64-bit integer, 8 bytes, little endian
+`int64` is a signed 64-bit integer, 8 bytes, [little endian](http://en.wikipedia.org/wiki/Endianness)
 
 `byte` is a single byte, 8 bits
 
-`float32` is a 32-bit floating point value, 4 bytes, IEEE-754 encoded
+`float32` is a 32-bit floating point value, 4 bytes, [IEEE-754](http://en.wikipedia.org/wiki/IEEE_floating_point) encoded
 
 `T[]` is an array of values of type T
 
@@ -158,8 +158,8 @@ There is also a `Flags` field, currently unused
 
 ### To-do list
 
-Merge headers when joining
-Left, right joins
-Drop headers
-Add headers
-Add constant attribute
+	Merge headers when joining
+	Left, right joins
+	Drop headers
+	Add headers
+	Add constant attribute
