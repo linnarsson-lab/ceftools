@@ -21,8 +21,10 @@ func main() {
 	var import_strt = cmdimport.Flag("strt", "Import a STRT '_expression.tab' file").Bool()
 
 	var drop = app.Command("drop", "Remove attributes")
-	var drop_attrs = drop.Flag("attrs", "Row attribute(s) to remove (case-sensitive, comma-separated)").Short('a').Required().String()
+	var drop_attrs = drop.Flag("attrs", "Row attribute(s) to remove (case-sensitive, comma-separated)").Short('a').String()
+	var drop_headers = drop.Flag("headers", "Headers to remove (case-sensitive, comma-separated)").Short('h').String()
 	var drop_except = drop.Flag("except", "Keep the given attributes instead of dropping them ").Bool()
+
 	var cmdselect = app.Command("select", "Select rows that match criteria (and drop the rest)")
 	var select_rows = cmdselect.Flag("range", "Select a range of rows (colon-separated, 1-based)").String()
 	var select_where = cmdselect.Flag("where", "Select rows with specific value for attribute ('attr=value')").String()
@@ -85,7 +87,7 @@ func main() {
 		}
 		return
 	case drop.FullCommand():
-		if err = ceftools.CmdDrop(*drop_attrs, *drop_except, *app_transpose); err != nil {
+		if err = ceftools.CmdDrop(*drop_attrs, *drop_headers, *drop_except, *app_transpose); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return

@@ -151,7 +151,6 @@ There is also a `Flags` field, currently unused
 
 	Merge headers when joining
 	Left, right joins
-	Drop headers (drop --header "Name,name")
 	Add headers (add --header "Name=Value")
 	Add constant attribute (add --attribute "Name=Value")
 	Add row index attribute (add --attribute "Name=$row")
@@ -173,5 +172,16 @@ Future commands
 	cef validate		- verify that the input file conforms to the CEB or CEF standard
 	cef view			- interactively navigate the matrix
 
+Future repo tools
+
+	cef repo --put "repo/dataset"		- Upload a dataset
+	cef repo --delete "repo/dataset"	- Remove a dataset
+	cef repo --get "repo/dataset"		- Get a dataset from given repo
+	cef repo							- List all non-empty repositories
+	cef repo --all						- List all repositories
+	cef repo --content <repo>			- List the datasets in a given repo
+	cef repo --about <repo>				- Show information about given repo (Owner, description, ...)
+
+	cef repo --put "slinnarsson/cortex" --desc "Data from Zeisel et al. Science 2015"
 
 
