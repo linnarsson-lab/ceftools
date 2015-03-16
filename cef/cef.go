@@ -4,10 +4,7 @@ import (
 	"fmt"
 	"github.com/alecthomas/kingpin"
 	"github.com/slinnarsson/ceftools"
-	"math"
 	"os"
-	"strconv"
-	"strings"
 )
 
 func main() {
@@ -20,7 +17,8 @@ func main() {
 	var info = app.Command("info", "Show a summary of the file contents")
 	var test = app.Command("test", "Perform an internal test")
 	var export = app.Command("export", "Export the input (CEF or CEB) as text-based CEF")
-	var cmdimport = app.Command("import", "Copy the input (CEF or CEB) to the output (CEB)")
+	var cmdimport = app.Command("import", "Import from a legacy format (default: CEF or CEB) and generate a CEB file output")
+	var import_strt = cmdimport.Flag("strt", "Import a STRT '_expression.tab' file").Bool()
 
 	var drop = app.Command("drop", "Remove attributes")
 	var drop_attrs = drop.Flag("attrs", "Row attribute(s) to remove (case-sensitive, comma-separated)").Short('a').Required().String()
@@ -28,7 +26,7 @@ func main() {
 	var cmdselect = app.Command("select", "Select rows that match criteria (and drop the rest)")
 	var select_rows = cmdselect.Flag("range", "Select a range of rows (colon-separated, 1-based)").String()
 	var select_where = cmdselect.Flag("where", "Select rows with specific value for attribute ('attr=value')").String()
-	var select_not = cmdselect.Flag("not", "Invert selection").Bool()
+	var select_except = cmdselect.Flag("except", "Invert selection").Bool()
 
 	var rescale = app.Command("rescale", "Rescale values by rows")
 	var rescale_method = rescale.Flag("method", "Method to use (log, tpm or rpkm)").Short('m').Required().Enum("log", "tpm", "rpkm")
@@ -42,7 +40,7 @@ func main() {
 	var sort_by = sort.Flag("by", "The attribute or column ('column=value') to sort by").Required().String()
 	var sort_reverse = sort.Flag("reverse", "Sort in reverse order").Short('r').Bool()
 	var sort_numerical = sort.Flag("numerical", "Numerical sort (default: alphabetical)").Short('n').Bool()
-	var sort_bycvmean = sort.Flag("cvmean", "Sort by offset to a CV-vs-mean least-squares fit").Bool()
+	//	var sort_bycvmean = sort.Flag("cvmean", "Sort by offset to a CV-vs-mean least-squares fit").Bool()
 
 	// Parse the command line
 	var parsed, err = app.Parse(os.Args[1:])
@@ -54,70 +52,24 @@ func main() {
 	// Handle the sub-commands
 	switch kingpin.MustParse(parsed, nil) {
 	case sort.FullCommand():
-		// Read the input
-		cef, err := ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"))
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			return
-		}
-		var result *ceftools.Cef
-		if *sort_numerical {
-			result, err = cef.SortByRowAttributeNumerical(*sort_by, *sort_reverse)
-		} else {
-			result, err = cef.SortByRowAttribute(*sort_by, *sort_reverse)
-		}
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-		}
-		// Write the CEB file
-		if err := ceftools.WriteAsCEB(result, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out")); err != nil {
+		if err = ceftools.CmdSort(*sort_by, *sort_numerical, *sort_reverse, *app_transpose); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return
 	case join.FullCommand():
-		// Read the input
-		left, err := ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"))
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			return
-		}
-		// Read the right (to be joined)
-		f, err := os.Open(*join_other)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			return
-		}
-		defer f.Close()
-		right, err := ceftools.Read(f, (*app_transpose == "inout") || (*app_transpose == "in"))
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			return
-		}
-		// Perform the join
-		attrs := strings.Split(*join_on, "=")
-		if len(attrs) != 2 {
-			fmt.Fprintln(os.Stderr, "--on 'attr1=attr2' was incorrectly specified")
-		}
-		cef, err := left.Join(right, attrs[0], attrs[1])
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			return
-		}
-		// Write the CEB file
-		if err := ceftools.WriteAsCEB(cef, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out")); err != nil {
+		if err = ceftools.CmdJoin(*join_other, *join_on, *app_transpose); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return
 	case cmdimport.FullCommand():
-		// Read the input
-		var cef, err = ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"))
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			return
-		}
-		// Write the CEB file
-		if err := ceftools.WriteAsCEB(cef, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out")); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+		if *import_strt {
+			if err = ceftools.CmdImportStrt(*app_transpose); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
+		} else {
+			if err = ceftools.CmdImport(*app_transpose); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
 		}
 		return
 	case export.FullCommand():
@@ -133,109 +85,17 @@ func main() {
 		}
 		return
 	case drop.FullCommand():
-		// Read the input
-		var cef, err = ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"))
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			return
-		}
-
-		contains := func(s []string, e string) bool {
-			for _, a := range s {
-				if a == e {
-					return true
-				}
-			}
-			return false
-		}
-
-		// Drop the attributes
-		todrop := strings.Split(*drop_attrs, ",")
-		temp := cef.RowAttributes[:0]
-		for _, att := range cef.RowAttributes {
-			if contains(todrop, att.Name) == *drop_except {
-				temp = append(temp, att)
-			}
-		}
-		cef.RowAttributes = temp
-
-		// Write the result
-		if err := ceftools.WriteAsCEB(cef, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out")); err != nil {
+		if err = ceftools.CmdDrop(*drop_attrs, *drop_except, *app_transpose); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return
 	case cmdselect.FullCommand():
-		print(select_not)
+		print(select_except)
 		print(select_rows)
 		print(select_where)
 		return
 	case rescale.FullCommand():
-		// Read the input
-		var cef, err = ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"))
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			return
-		}
-
-		log_rescale := func(vals []float32) {
-			for i := 0; i < len(vals); i++ {
-				vals[i] = float32(math.Log10(float64(vals[i] + 1)))
-			}
-		}
-		tpm_rescale := func(vals []float32) {
-			sum := float32(0)
-			for i := 0; i < len(vals); i++ {
-				sum += vals[i]
-			}
-			if sum != 0 {
-				for i := 0; i < len(vals); i++ {
-					vals[i] = vals[i] * 1000000 / sum
-				}
-			}
-		}
-		rpkm_rescale := func(vals []float32, length float32) {
-			sum := float32(0)
-			for i := 0; i < len(vals); i++ {
-				sum += vals[i]
-			}
-			if length == 0 {
-				length = 1
-			}
-			if sum != 0 {
-				for i := 0; i < len(vals); i++ {
-					vals[i] = vals[i] * 1000000 / sum / length
-				}
-			}
-		}
-		var length []string
-		if *rescale_length != "" {
-			for i := 0; i < len(cef.RowAttributes); i++ {
-				if cef.RowAttributes[i].Name == *rescale_length {
-					length = cef.RowAttributes[i].Values
-				}
-			}
-			if length == nil {
-				panic("Length attribute not found when attempting to rescale by rpkm")
-			}
-		}
-		for i := int64(0); i < cef.NumRows; i++ {
-			switch *rescale_method {
-			case "log":
-				log_rescale(cef.GetRow(i))
-				break
-			case "tpm":
-				tpm_rescale(cef.GetRow(i))
-			case "rpkm":
-				bp, err := strconv.Atoi(length[i])
-				if err != nil {
-					panic("Length attribute was not a valid integer (when attempting to rescale by rpkm)")
-				}
-				rpkm_rescale(cef.GetRow(i), float32(bp)/1000)
-			}
-		}
-
-		// Write the result
-		if err := ceftools.WriteAsCEB(cef, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out")); err != nil {
+		if err = ceftools.CmdRescale(*rescale_method, *rescale_length, *app_transpose); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return

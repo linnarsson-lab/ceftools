@@ -28,22 +28,12 @@ Commands that have been implemented so far
 ```
 cef help			- print help for the cef command
 cef info            - overview of file contents
-cef drop 			- drop attribute(s)
+cef drop 			- drop attribute(s) or header(s)
 cef import			- input as CEF or CEB, output as CEB
 cef export			- input as CEB or CEF, output as CEF
 cef rescale			- rescale rows (rpkm, tpm or log-transformed)
 cef join		  	- join two datasets by given attributes
 cef sort			- sort by row attribute or by specific column
-```
-
-Future commands
-
-```
-cef select			- select rows that match given criteria
-cef aggregate		- calculate aggregate statistics for every row
-cef groupby			- group rows that share a row attribute, and aggregate values
-cef validate		- verify that the input file conforms to the CEB or CEF standard
-cef view			- interactively navigate the matrix
 ```
 
 Commands operate on rows by default. For example `drop` can be used to remove row attributes, but not column attributes. Every command accepts a `--transpose none|in|out|inout` parameter, which causes the CEB to be transposed before and/or after the operation is applied. This can be used to operate on columns. For example, to remove column attribute `Gene` then sort on column attribute `Length`:
@@ -161,13 +151,27 @@ There is also a `Flags` field, currently unused
 
 	Merge headers when joining
 	Left, right joins
-	Drop headers
-	Add headers
-	Add constant attribute
+	Drop headers (drop --header "Name,name")
+	Add headers (add --header "Name=Value")
+	Add constant attribute (add --attribute "Name=Value")
+	Add row index attribute (add --attribute "Name=$row")
 	Sort by specific column
 	Sort by cv/mean offset (https://github.com/glycerine/zettalm)
 	Parsers and generators for R, Python, MATLAB, Mathematica, Java, 
 	Test suite for parsers and generators
 	Validator for CEF/CEB files
 	Cloud-based dataset manager
+	Internal pipes
+	Memory-mapped files
+
+Future commands
+
+	cef add 			- add attribute or header with constant value 
+	cef select			- select rows that match given criteria
+	cef aggregate		- calculate aggregate statistics for every row
+	cef groupby			- group rows that share a row attribute, and aggregate values
+	cef validate		- verify that the input file conforms to the CEB or CEF standard
+	cef view			- interactively navigate the matrix
+
+
 

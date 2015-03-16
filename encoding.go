@@ -238,6 +238,10 @@ func WriteAsCEF(cef *Cef, f *os.File, transposed bool) error {
 	return nil
 }
 
+func ReadStrt(f *os.File, transposed bool) (*Cef, error) {
+	return nil, errors.New("Importing STRT files: not implemented")
+}
+
 func readCEF(f *os.File, transposed bool) (*Cef, error) {
 	var r = csv.NewReader(f)
 	r.Comma = '\t'
