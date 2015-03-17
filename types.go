@@ -28,32 +28,30 @@ const (
 )
 
 type Cef struct {
-	MajorVersion     int32
-	MinorVersion     int32
-	NumRows          int64
-	NumColumns       int64
+	NumRows          int
+	NumColumns       int
 	Headers          []Header
-	Flags            int64
+	Flags            int
 	RowAttributes    []Attribute
 	ColumnAttributes []Attribute
 	Matrix           []float32
 }
 
-func (cef Cef) Get(col int64, row int64) float32 {
+func (cef Cef) Get(col int, row int) float32 {
 	return cef.Matrix[col+row*cef.NumColumns]
 }
 
-func (cef Cef) Set(col int64, row int64, val float32) {
+func (cef Cef) Set(col int, row int, val float32) {
 	cef.Matrix[col+row*cef.NumColumns] = val
 }
 
-func (cef Cef) GetRow(row int64) []float32 {
+func (cef Cef) GetRow(row int) []float32 {
 	return cef.Matrix[row*cef.NumColumns : (row+1)*cef.NumColumns]
 }
 
 type stringRec struct {
 	value string
-	index int64
+	index int
 }
 type indexedStrings []stringRec
 
@@ -75,7 +73,7 @@ func (cef Cef) SortByRowAttribute(attr string, reverse bool) (*Cef, error) {
 
 	// Collect the values to be sorted
 	recs := make([]stringRec, len(index))
-	for i := int64(0); i < int64(len(index)); i++ {
+	for i := 0; i < len(index); i++ {
 		recs[i] = stringRec{index[i], i}
 	}
 	// Sort them
@@ -83,8 +81,6 @@ func (cef Cef) SortByRowAttribute(attr string, reverse bool) (*Cef, error) {
 
 	// Make the resulting Cef
 	result := new(Cef)
-	result.MajorVersion = cef.MajorVersion
-	result.MinorVersion = cef.MinorVersion
 	result.NumColumns = cef.NumColumns
 	result.NumRows = cef.NumRows
 	result.Headers = cef.Headers
@@ -105,7 +101,7 @@ func (cef Cef) SortByRowAttribute(attr string, reverse bool) (*Cef, error) {
 			}
 		}
 	} else {
-		for i := int64(0); i < cef.NumRows; i++ {
+		for i := 0; i < cef.NumRows; i++ {
 			from := recs[i].index
 			result.Matrix = append(result.Matrix, cef.GetRow(from)...)
 			for j := 0; j < len(cef.RowAttributes); j++ {
@@ -118,7 +114,7 @@ func (cef Cef) SortByRowAttribute(attr string, reverse bool) (*Cef, error) {
 
 type numberRec struct {
 	value float32
-	index int64
+	index int
 }
 type indexedNumbers []numberRec
 
@@ -140,7 +136,7 @@ func (cef Cef) SortByRowAttributeNumerical(attr string, reverse bool) (*Cef, err
 
 	// Collect the values to be sorted
 	recs := make([]numberRec, len(index))
-	for i := int64(0); i < int64(len(index)); i++ {
+	for i := 0; i < len(index); i++ {
 		value, err := strconv.ParseFloat(index[i], 32)
 		if err != nil {
 			value = 0
@@ -152,8 +148,6 @@ func (cef Cef) SortByRowAttributeNumerical(attr string, reverse bool) (*Cef, err
 
 	// Make the resulting Cef
 	result := new(Cef)
-	result.MajorVersion = cef.MajorVersion
-	result.MinorVersion = cef.MinorVersion
 	result.NumColumns = cef.NumColumns
 	result.NumRows = cef.NumRows
 	result.Headers = cef.Headers
@@ -174,7 +168,7 @@ func (cef Cef) SortByRowAttributeNumerical(attr string, reverse bool) (*Cef, err
 			}
 		}
 	} else {
-		for i := int64(0); i < cef.NumRows; i++ {
+		for i := 0; i < cef.NumRows; i++ {
 			from := recs[i].index
 			result.Matrix = append(result.Matrix, cef.GetRow(from)...)
 			for j := 0; j < len(cef.RowAttributes); j++ {
@@ -218,8 +212,6 @@ func (left Cef) Join(right *Cef, leftAttr string, rightAttr string) (*Cef, error
 
 	// Prepare the result
 	result := new(Cef)
-	result.MajorVersion = left.MajorVersion
-	result.MinorVersion = left.MinorVersion
 	result.NumColumns = left.NumColumns + right.NumColumns
 	result.Headers = left.Headers
 	result.Flags = left.Flags
@@ -256,15 +248,15 @@ func (left Cef) Join(right *Cef, leftAttr string, rightAttr string) (*Cef, error
 	}
 
 	// For each row of the right table, look it up in the hash
-	numRows := int64(0)
+	numRows := 0
 	for i := 0; i < len(rightIndex); i++ {
 		ix := leftKeys[rightIndex[i]]
 		if ix != 0 {
 			// We have a match; append one row to the result
 			numRows++
 			leftKeys[rightIndex[i]] = 0 // Delete the key to prevent future matches (skip if doing right join?)
-			result.Matrix = append(result.Matrix, left.GetRow(int64(ix-1))...)
-			result.Matrix = append(result.Matrix, right.GetRow(int64(i))...)
+			result.Matrix = append(result.Matrix, left.GetRow(ix-1)...)
+			result.Matrix = append(result.Matrix, right.GetRow(i)...)
 
 			// Append to the row attributes
 			for j := 0; j < len(left.RowAttributes); j++ {

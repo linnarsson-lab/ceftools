@@ -25,10 +25,14 @@ func main() {
 	var drop_headers = drop.Flag("headers", "Headers to remove (case-sensitive, comma-separated)").Short('h').String()
 	var drop_except = drop.Flag("except", "Keep the given attributes instead of dropping them ").Bool()
 
-	var cmdselect = app.Command("select", "Select rows that match criteria (and drop the rest)")
-	var select_rows = cmdselect.Flag("range", "Select a range of rows (colon-separated, 1-based)").String()
-	var select_where = cmdselect.Flag("where", "Select rows with specific value for attribute ('attr=value')").String()
-	var select_except = cmdselect.Flag("except", "Invert selection").Bool()
+	var add = app.Command("add", "Add header or row attribute")
+	var add_header = add.Flag("header", "Header to add, in the form 'name=value'").Short('h').String()
+	var add_attr = add.Flag("attr", "Attribute to add, in the form 'name=value' (value can be '(row)')").Short('a').String()
+
+	//	var cmdselect = app.Command("select", "Select rows that match criteria (and drop the rest)")
+	//	var select_rows = cmdselect.Flag("range", "Select a range of rows (colon-separated, 1-based)").String()
+	//	var select_where = cmdselect.Flag("where", "Select rows with specific value for attribute ('attr=value')").String()
+	//	var select_except = cmdselect.Flag("except", "Invert selection").Bool()
 
 	var rescale = app.Command("rescale", "Rescale values by rows")
 	var rescale_method = rescale.Flag("method", "Method to use (log, tpm or rpkm)").Short('m').Required().Enum("log", "tpm", "rpkm")
@@ -53,6 +57,11 @@ func main() {
 
 	// Handle the sub-commands
 	switch kingpin.MustParse(parsed, nil) {
+	case add.FullCommand():
+		if err = ceftools.CmdAdd(*add_attr, *add_header, *app_transpose); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		return
 	case sort.FullCommand():
 		if err = ceftools.CmdSort(*sort_by, *sort_numerical, *sort_reverse, *app_transpose); err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -91,11 +100,6 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return
-	case cmdselect.FullCommand():
-		print(select_except)
-		print(select_rows)
-		print(select_where)
-		return
 	case rescale.FullCommand():
 		if err = ceftools.CmdRescale(*rescale_method, *rescale_length, *app_transpose); err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -107,8 +111,6 @@ func main() {
 		var cef = new(ceftools.Cef)
 		cef.NumColumns = 5
 		cef.NumRows = 10
-		cef.MajorVersion = 0
-		cef.MinorVersion = 1
 		cef.Headers = make([]ceftools.Header, 2)
 		cef.Headers[0].Name = "Tissue"
 		cef.Headers[0].Value = "Amygdala"
@@ -142,7 +144,6 @@ func main() {
 			fmt.Fprintln(os.Stderr, err.Error())
 			return
 		}
-		fmt.Fprintf(os.Stderr, "          Version: %v.%v\n", cef.MajorVersion, cef.MinorVersion)
 		fmt.Fprintf(os.Stderr, "          Columns: %v\n", cef.NumColumns)
 		fmt.Fprintf(os.Stderr, "             Rows: %v\n", cef.NumRows)
 		fmt.Fprintf(os.Stderr, "            Flags: %v\n", cef.Flags)

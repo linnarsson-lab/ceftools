@@ -25,16 +25,15 @@ text files that can be easily parsed or imported into e.g. Excel. Not all featur
 
 Commands that have been implemented so far 
 
-```
-cef help			- print help for the cef command
-cef info            - overview of file contents
-cef drop 			- drop attribute(s) or header(s)
-cef import			- input as CEF or CEB, output as CEB
-cef export			- input as CEB or CEF, output as CEF
-cef rescale			- rescale rows (rpkm, tpm or log-transformed)
-cef join		  	- join two datasets by given attributes
-cef sort			- sort by row attribute or by specific column
-```
+	cef help			- print help for the cef command
+	cef info            - overview of file contents
+	cef drop 			- drop attribute(s) or header(s)
+	cef import			- input as CEF or CEB, output as CEB
+	cef export			- input as CEB or CEF, output as CEF
+	cef rescale			- rescale rows (rpkm, tpm or log-transformed)
+	cef join		  	- join two datasets by given attributes
+	cef sort			- sort by row attribute or by specific column
+	cef add 			- add attribute or header with constant value 
 
 Commands operate on rows by default. For example `drop` can be used to remove row attributes, but not column attributes. Every command accepts a `--transpose none|in|out|inout` parameter, which causes the CEB to be transposed before and/or after the operation is applied. This can be used to operate on columns. For example, to remove column attribute `Gene` then sort on column attribute `Length`:
 
@@ -100,7 +99,7 @@ There is also a `Flags` field, currently unused
 
 #### Data types
 
-`string` is a [UTF-8](http://en.wikipedia.org/wiki/UTF-8) encoded string with a leading int32 (signed 32-bit integer) length indicator, and no terminator. For example, the string "Hello, world!" is stored as [11, 'H','e','l','l','o',' ','w','o','r','d','!']. The length indicator gives the total number of bytes in the string, excluding the length indicator (it does not count the number of characters in the string, since some UTF-8 characters are stored as multi-byte sequences)
+`string` is a [UTF-8](http://en.wikipedia.org/wiki/UTF-8) encoded string with a leading int32 (signed 32-bit integer) length indicator, and no terminator. For example, the string "Hello, world!" is stored as [12, 'H','e','l','l','o',' ','w','o','r','l',d','!']. The length indicator gives the total number of bytes in the string, excluding the length indicator (it does not count the number of characters in the string, since some UTF-8 characters are stored as multi-byte sequences)
 
 `int32` is a signed 32-bit integer, 4 bytes, [little endian](http://en.wikipedia.org/wiki/Endianness)
 
@@ -151,9 +150,6 @@ There is also a `Flags` field, currently unused
 
 	Merge headers when joining
 	Left, right joins
-	Add headers (add --header "Name=Value")
-	Add constant attribute (add --attribute "Name=Value")
-	Add row index attribute (add --attribute "Name=$row")
 	Sort by specific column
 	Sort by cv/mean offset (https://github.com/glycerine/zettalm)
 	Parsers and generators for R, Python, MATLAB, Mathematica, Java, 
@@ -165,12 +161,12 @@ There is also a `Flags` field, currently unused
 
 Future commands
 
-	cef add 			- add attribute or header with constant value 
 	cef select			- select rows that match given criteria
 	cef aggregate		- calculate aggregate statistics for every row
 	cef groupby			- group rows that share a row attribute, and aggregate values
 	cef validate		- verify that the input file conforms to the CEB or CEF standard
 	cef view			- interactively navigate the matrix
+	cef browse			- web interface to cef ? (https://github.com/jteeuwen/go-bindata)
 
 Future repo tools
 

@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"strconv"
@@ -71,8 +72,8 @@ func WriteAsCEB(cef *Cef, f *os.File, transposed bool) error {
 
 	// Write the matrix
 	if transposed {
-		for j := int64(0); j < cef.NumRows; j++ {
-			for i := int64(0); i < cef.NumColumns; i++ {
+		for j := 0; j < cef.NumRows; j++ {
+			for i := 0; i < cef.NumColumns; i++ {
 				value := cef.Get(i, j)
 				if err := binary.Write(f, binary.LittleEndian, &value); err != nil {
 					return err
@@ -80,8 +81,8 @@ func WriteAsCEB(cef *Cef, f *os.File, transposed bool) error {
 			}
 		}
 	} else {
-		for i := int64(0); i < cef.NumColumns; i++ {
-			for j := int64(0); j < cef.NumRows; j++ {
+		for i := 0; i < cef.NumColumns; i++ {
+			for j := 0; j < cef.NumRows; j++ {
 				value := cef.Get(i, j)
 				if err := binary.Write(f, binary.LittleEndian, &value); err != nil {
 					return err
@@ -91,7 +92,7 @@ func WriteAsCEB(cef *Cef, f *os.File, transposed bool) error {
 	}
 
 	// Currently the skip section is unused
-	nSkip := int64(0)
+	nSkip := 0
 	if err := binary.Write(f, binary.LittleEndian, &nSkip); err != nil {
 		return err
 	}
@@ -102,7 +103,7 @@ func WriteAsCEB(cef *Cef, f *os.File, transposed bool) error {
 		return err
 	}
 
-	for i := int32(0); i < nHeaders; i++ {
+	for i := 0; i < int(nHeaders); i++ {
 		if err := writeString(cef.Headers[i].Name); err != nil {
 			return err
 		}
@@ -113,16 +114,16 @@ func WriteAsCEB(cef *Cef, f *os.File, transposed bool) error {
 
 	// Helper to write attributes
 	writeAttrs := func(attrs []Attribute) error {
-		var nAttrs = int32(len(attrs))
+		var nAttrs = len(attrs)
 		if err := binary.Write(f, binary.LittleEndian, &nAttrs); err != nil {
 			return err
 		}
-		for i := int32(0); i < nAttrs; i++ {
+		for i := 0; i < nAttrs; i++ {
 			if err := writeString(attrs[i].Name); err != nil {
 				return err
 			}
 		}
-		for i := int32(0); i < nAttrs; i++ {
+		for i := 0; i < nAttrs; i++ {
 			for j := 0; j < len(attrs[0].Values); j++ {
 				if err := writeString(attrs[i].Values[j]); err != nil {
 					return err
@@ -154,22 +155,22 @@ func WriteAsCEF(cef *Cef, f *os.File, transposed bool) error {
 	// Make a vector to hold each line (we'll reuse it)
 	var row []string
 	if transposed {
-		row = make([]string, int(math.Max(7, float64(cef.NumRows+int64(len(cef.ColumnAttributes)+1)))))
+		row = make([]string, int(math.Max(7, float64(cef.NumRows+len(cef.ColumnAttributes)+1))))
 	} else {
-		row = make([]string, int(math.Max(7, float64(cef.NumColumns+int64(len(cef.RowAttributes)+1)))))
+		row = make([]string, int(math.Max(7, float64(cef.NumColumns+len(cef.RowAttributes)+1))))
 	}
 
 	// Write the header line
 	row[0] = "CEF"
 	row[1] = strconv.Itoa(len(cef.Headers))
-	row[2] = strconv.Itoa(int(cef.NumColumns))
-	row[3] = strconv.Itoa(int(cef.NumRows))
+	row[2] = strconv.Itoa(cef.NumColumns)
+	row[3] = strconv.Itoa(cef.NumRows)
 	row[4] = strconv.Itoa(len(cef.ColumnAttributes))
 	row[5] = strconv.Itoa(len(cef.RowAttributes))
-	row[6] = strconv.Itoa(int(cef.Flags))
+	row[6] = strconv.Itoa(cef.Flags)
 	if transposed {
-		row[2] = strconv.Itoa(int(cef.NumRows))
-		row[3] = strconv.Itoa(int(cef.NumColumns))
+		row[2] = strconv.Itoa(cef.NumRows)
+		row[3] = strconv.Itoa(cef.NumColumns)
 		row[4] = strconv.Itoa(len(cef.RowAttributes))
 		row[5] = strconv.Itoa(len(cef.ColumnAttributes))
 	}
@@ -182,28 +183,28 @@ func WriteAsCEF(cef *Cef, f *os.File, transposed bool) error {
 		write(row)
 	}
 
-	ralen := int64(len(cef.RowAttributes))
-	calen := int64(len(cef.ColumnAttributes))
+	ralen := len(cef.RowAttributes)
+	calen := len(cef.ColumnAttributes)
 
 	if transposed {
 		// Write the column attributes (from row attrs)
-		for i := int64(0); i < ralen; i++ {
+		for i := 0; i < ralen; i++ {
 			row[calen] = cef.RowAttributes[i].Name
-			for j := int64(0); j < cef.NumRows; j++ {
+			for j := 0; j < cef.NumRows; j++ {
 				row[j+calen+1] = cef.RowAttributes[i].Values[j]
 			}
 			write(row)
 		}
 
 		// Write the row attributes and matrix
-		for i := int64(0); i < calen; i++ {
+		for i := 0; i < calen; i++ {
 			row[i] = cef.ColumnAttributes[i].Name
 		}
 		write(row)
-		for i := int64(0); i < cef.NumColumns; i++ {
-			for j := int64(0); j < calen; j++ {
+		for i := 0; i < cef.NumColumns; i++ {
+			for j := 0; j < calen; j++ {
 				row[j] = cef.ColumnAttributes[j].Values[i]
-				for k := int64(0); k < cef.NumRows; k++ {
+				for k := 0; k < cef.NumRows; k++ {
 					row[k+ralen+1] = strconv.FormatFloat(float64(cef.Get(i, k)), 'f', -1, 64)
 				}
 			}
@@ -211,23 +212,23 @@ func WriteAsCEF(cef *Cef, f *os.File, transposed bool) error {
 		}
 	} else {
 		// Write the column attributes
-		for i := int64(0); i < calen; i++ {
+		for i := 0; i < calen; i++ {
 			row[ralen] = cef.ColumnAttributes[i].Name
-			for j := int64(0); j < cef.NumColumns; j++ {
+			for j := 0; j < cef.NumColumns; j++ {
 				row[j+ralen+1] = cef.ColumnAttributes[i].Values[j]
 			}
 			write(row)
 		}
 
 		// Write the row attributes and matrix
-		for i := int64(0); i < ralen; i++ {
+		for i := 0; i < ralen; i++ {
 			row[i] = cef.RowAttributes[i].Name
 		}
 		write(row)
-		for i := int64(0); i < cef.NumRows; i++ {
-			for j := int64(0); j < ralen; j++ {
+		for i := 0; i < cef.NumRows; i++ {
+			for j := 0; j < ralen; j++ {
 				row[j] = cef.RowAttributes[j].Values[i]
-				for k := int64(0); k < cef.NumColumns; k++ {
+				for k := 0; k < cef.NumColumns; k++ {
 					row[k+ralen+1] = strconv.FormatFloat(float64(cef.Get(k, i)), 'f', -1, 64)
 				}
 			}
@@ -239,7 +240,93 @@ func WriteAsCEF(cef *Cef, f *os.File, transposed bool) error {
 }
 
 func ReadStrt(f *os.File, transposed bool) (*Cef, error) {
-	return nil, errors.New("Importing STRT files: not implemented")
+	var r = csv.NewReader(f)
+	r.Comma = '\t'
+	r.FieldsPerRecord = -1
+
+	cef := new(Cef)
+	cef.Headers = make([]Header, 0)
+
+	// Make a vector to hold each line (we'll reuse it)
+	row, err := r.Read()
+	if err != nil {
+		return nil, err
+	}
+	if row[0][0] == '#' {
+		cef.Headers = append(cef.Headers, Header{"Comment", row[0][1:]})
+		row, err = r.Read()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Count the row attributes by counting leading empty columns
+	nRowAttrs := 0
+	for i := 0; i < len(row); i++ {
+		nRowAttrs++
+		if row[i] != "" {
+			break
+		}
+	}
+
+	// Parse the column attributes
+	cef.ColumnAttributes = make([]Attribute, 0)
+	cef.NumColumns = len(row) - nRowAttrs
+	parsingColAttrs := true
+	for parsingColAttrs {
+		attr := Attribute{row[nRowAttrs-1], make([]string, cef.NumColumns)}
+		if attr.Name[len(attr.Name)-1] == ':' {
+			attr.Name = attr.Name[:len(attr.Name)-1]
+		}
+		for i := nRowAttrs - 1; i < cef.NumColumns; i++ {
+			attr.Values[i-nRowAttrs] = row[i]
+		}
+		cef.ColumnAttributes = append(cef.ColumnAttributes, attr)
+
+		row, err = r.Read()
+		if err != nil {
+			return nil, err
+		}
+		if row[0] != "" {
+			parsingColAttrs = false
+		}
+	}
+
+	// Read the row attribute names
+	cef.RowAttributes = make([]Attribute, nRowAttrs)
+	for i := 0; i < nRowAttrs; i++ {
+		cef.RowAttributes[i] = Attribute{row[i], make([]string, 0)}
+	}
+
+	// Read the rows and row attributes
+	cef.Matrix = make([]float32, 0)
+	nRows := 0
+	for true {
+		row, err = r.Read()
+		if err != nil {
+			if err == io.EOF {
+				cef.NumRows = nRows
+				return cef, nil
+			}
+			return nil, err
+		}
+		nRows++
+
+		// Row attributes
+		for i := 0; i < nRowAttrs; i++ {
+			cef.RowAttributes[i].Values = append(cef.RowAttributes[i].Values, row[i])
+		}
+		values := make([]float32, cef.NumColumns)
+		for i := 0; i < cef.NumColumns; i++ {
+			value, err := strconv.ParseFloat(row[i+nRowAttrs], 32)
+			if err != nil {
+				return nil, errors.New(fmt.Sprintf("Error parsing value in row %v, column %v", nRows, i+1))
+			}
+			values[i] = float32(value)
+		}
+		cef.Matrix = append(cef.Matrix, values...)
+	}
+	return cef, nil
 }
 
 func readCEF(f *os.File, transposed bool) (*Cef, error) {
@@ -280,9 +367,9 @@ func readCEF(f *os.File, transposed bool) (*Cef, error) {
 	if err != nil {
 		return nil, errors.New("Flags value (row 1, column 7) is not a valid integer")
 	}
-	cef.NumRows = int64(nRows)
-	cef.NumColumns = int64(nColumns)
-	cef.Flags = int64(flags)
+	cef.NumRows = nRows
+	cef.NumColumns = nColumns
+	cef.Flags = flags
 
 	// Read the headers
 	cef.Headers = make([]Header, nHeaders)
@@ -329,7 +416,7 @@ func readCEF(f *os.File, transposed bool) (*Cef, error) {
 
 	// Read the rows, with row attribute values
 	cef.Matrix = make([]float32, cef.NumColumns*cef.NumRows)
-	for i := 0; i < int(cef.NumRows); i++ {
+	for i := 0; i < cef.NumRows; i++ {
 		row, err := r.Read()
 		if err != nil {
 			return nil, err
@@ -346,14 +433,12 @@ func readCEF(f *os.File, transposed bool) (*Cef, error) {
 				return nil, errors.New(fmt.Sprintf("Invalid float32 value in column %v, row %v of the main matrix: %v", j+1, i+1, row[j+nRowAttrs]))
 			}
 			if transposed {
-				cef.Matrix[int64(j)*cef.NumRows+int64(i)] = float32(val)
+				cef.Matrix[j*cef.NumRows+i] = float32(val)
 			} else {
-				cef.Matrix[int64(j)+int64(i)*cef.NumColumns] = float32(val)
+				cef.Matrix[j+i*cef.NumColumns] = float32(val)
 			}
 		}
 	}
-	cef.MajorVersion = MajorVersion
-	cef.MinorVersion = MinorVersion
 	// Exchange the rows and columns
 	if transposed {
 		temp1 := cef.NumRows
@@ -371,12 +456,14 @@ func readCEB(f *os.File, transposed bool) (*Cef, error) {
 	var cef Cef
 
 	// Ensure we're dealing with the correct version of the CEB file format
-	err := binary.Read(f, binary.LittleEndian, &cef.MajorVersion)
-	if err != nil || cef.MajorVersion > 0 {
+	var majorVersion int32
+	var minorVersion int32
+	err := binary.Read(f, binary.LittleEndian, &majorVersion)
+	if err != nil || majorVersion > 0 {
 		return nil, errors.New("This CEB file version is not supported by this version of Cellophane")
 	}
 	// The minor version is ignored (given that the major version was ok); changes should be backward compatible
-	err = binary.Read(f, binary.LittleEndian, &cef.MinorVersion)
+	err = binary.Read(f, binary.LittleEndian, &minorVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -395,8 +482,8 @@ func readCEB(f *os.File, transposed bool) (*Cef, error) {
 
 	// Read the matrix
 	cef.Matrix = make([]float32, cef.NumColumns*cef.NumRows)
-	for i := int64(0); i < cef.NumColumns; i++ {
-		for j := int64(0); j < cef.NumRows; j++ {
+	for i := 0; i < cef.NumColumns; i++ {
+		for j := 0; j < cef.NumRows; j++ {
 			var value float32
 			if err = binary.Read(f, binary.LittleEndian, &value); err != nil {
 				return nil, err
@@ -450,8 +537,8 @@ func readCEB(f *os.File, transposed bool) (*Cef, error) {
 		}
 		cef.ColumnAttributes[i] = Attribute{colAttrName, make([]string, cef.NumColumns)}
 	}
-	for i := int32(0); i < nColAttrs; i++ {
-		for j := int64(0); j < cef.NumColumns; j++ {
+	for i := 0; i < int(nColAttrs); i++ {
+		for j := 0; j < cef.NumColumns; j++ {
 			if cef.ColumnAttributes[i].Values[j], err = readString(f); err != nil {
 				return nil, err
 			}
@@ -471,8 +558,8 @@ func readCEB(f *os.File, transposed bool) (*Cef, error) {
 		}
 		cef.RowAttributes[i] = Attribute{rowAttrName, make([]string, cef.NumRows)}
 	}
-	for i := int32(0); i < nRowAttrs; i++ {
-		for j := int64(0); j < cef.NumRows; j++ {
+	for i := 0; i < int(nRowAttrs); i++ {
+		for j := 0; j < cef.NumRows; j++ {
 			if cef.RowAttributes[i].Values[j], err = readString(f); err != nil {
 				return nil, err
 			}
