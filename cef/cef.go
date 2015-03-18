@@ -14,13 +14,13 @@ func main() {
 	var versionString = fmt.Sprintf("ceftools v%v.%v (C) 2015 Sten Linnarsson <http://linnarssonlab.org/>", ceftools.MajorVersion, ceftools.MinorVersion)
 
 	var app = kingpin.New("cef", versionString)
-	var app_transpose = app.Flag("transpose", "Transpose matrix (in, out, inout or none)").Short('t').Default("none").Enum("none", "in", "out", "inout")
+	var app_bycol = app.Flag("bycol", "Apply command by columns instead of by rows").Short('t').Bool()
 
 	var info = app.Command("info", "Show a summary of the file contents")
 	var test = app.Command("test", "Perform an internal test")
-	var export = app.Command("export", "Export the input (CEF or CEB) as text-based CEF")
-	var cmdimport = app.Command("import", "Import from a legacy format (default: CEF or CEB) and generate a CEB file output")
-	var import_strt = cmdimport.Flag("strt", "Import a STRT '_expression.tab' file").Bool()
+	var transpose = app.Command("transpose", "Transpose rows and columns")
+	var cmdimport = app.Command("import", "Import from a legacy format")
+	var import_format = cmdimport.Flag("format", "The file format to expect").Required().Short('f').String()
 
 	var drop = app.Command("drop", "Remove attributes")
 	var drop_attrs = drop.Flag("attrs", "Row attribute(s) to remove (case-sensitive, comma-separated)").Short('a').String()
@@ -60,43 +60,41 @@ func main() {
 	// Handle the sub-commands
 	switch kingpin.MustParse(parsed, nil) {
 	case add.FullCommand():
-		if err = ceftools.CmdAdd(*add_attr, *add_header, *app_transpose); err != nil {
+		if err = ceftools.CmdAdd(*add_attr, *add_header, *app_bycol); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return
 	case sort.FullCommand():
-		if err = ceftools.CmdSort(*sort_by, *sort_numerical, *sort_reverse, *app_transpose); err != nil {
+		if err = ceftools.CmdSort(*sort_by, *sort_numerical, *sort_reverse, *app_bycol); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return
 	case join.FullCommand():
-		if err = ceftools.CmdJoin(*join_other, *join_on, *app_transpose); err != nil {
+		if err = ceftools.CmdJoin(*join_other, *join_on, *app_bycol); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return
 	case cmdimport.FullCommand():
-		if *import_strt {
-			if err = ceftools.CmdImportStrt(*app_transpose); err != nil {
+		if *import_format == "strt" {
+			if err = ceftools.CmdImportStrt(); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 			}
 		} else {
-			if err = ceftools.CmdImport(*app_transpose); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-			}
+			fmt.Fprintln(os.Stderr, "Unknown format (only valid format is 'strt')")
 		}
 		return
 	case cmdselect.FullCommand():
 		if *select_range != "" {
-			temp := strings.Split(*select_range, "-")
+			temp := strings.Split(*select_range, ":")
 			if len(temp) != 2 {
-				fmt.Fprintln(os.Stderr, "Invalid range specification (should be like '1-10', '-20', or '100-')")
+				fmt.Fprintln(os.Stderr, "Invalid range specification (should be like '1:10', ':20', or '100:')")
 				return
 			}
 			from := 1
 			if temp[0] != "" {
 				from, err = strconv.Atoi(temp[0])
 				if err != nil {
-					fmt.Fprintln(os.Stderr, "Invalid range specification (should be like '1-10', '-20', or '100-')")
+					fmt.Fprintln(os.Stderr, "Invalid range specification (should be like '1:10', ':20', or '100:')")
 					return
 				}
 			}
@@ -104,32 +102,32 @@ func main() {
 			if temp[1] != "" {
 				to, err = strconv.Atoi(temp[1])
 				if err != nil {
-					fmt.Fprintln(os.Stderr, "Invalid range specification (should be like '1-10', '-20', or '100-')")
+					fmt.Fprintln(os.Stderr, "Invalid range specification (should be like '1:10', ':20', or '100:')")
 					return
 				}
 			}
-			ceftools.CmdSelectRange(from, to, *app_transpose)
+			ceftools.CmdSelectRange(from, to, *app_bycol)
 		}
 		return
-	case export.FullCommand():
+	case transpose.FullCommand():
 		// Read the input
-		var cef, err = ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"))
+		var cef, err = ceftools.Read(os.Stdin, true)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			return
 		}
 		// Write the CEF file
-		if err := ceftools.WriteAsCEF(cef, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out")); err != nil {
+		if err := ceftools.Write(cef, os.Stdout, false); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return
 	case drop.FullCommand():
-		if err = ceftools.CmdDrop(*drop_attrs, *drop_headers, *drop_except, *app_transpose); err != nil {
+		if err = ceftools.CmdDrop(*drop_attrs, *drop_headers, *drop_except, *app_bycol); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return
 	case rescale.FullCommand():
-		if err = ceftools.CmdRescale(*rescale_method, *rescale_length, *app_transpose); err != nil {
+		if err = ceftools.CmdRescale(*rescale_method, *rescale_length, *app_bycol); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return
@@ -160,14 +158,14 @@ func main() {
 		cef.Set(0, 0, 1)
 		cef.Set(0, 1, 2)
 		cef.Set(0, 2, 3)
-		if err := ceftools.WriteAsCEB(cef, os.Stdout, (*app_transpose == "inout") || (*app_transpose == "out")); err != nil {
+		if err := ceftools.Write(cef, os.Stdout, false); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return
 
 	// Show info
 	case info.FullCommand():
-		var cef, err = ceftools.Read(os.Stdin, (*app_transpose == "inout") || (*app_transpose == "in"))
+		var cef, err = ceftools.Read(os.Stdin, *app_bycol)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			return
