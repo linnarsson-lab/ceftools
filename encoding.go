@@ -50,23 +50,26 @@ func WriteAsCEB(cef *Cef, f *os.File, transposed bool) error {
 	}
 
 	// Write the column and row counts
+	nRows := int64(cef.NumRows)
+	nColumns := int64(cef.NumColumns)
 	if transposed {
-		if err := binary.Write(f, binary.LittleEndian, &cef.NumRows); err != nil {
+		if err := binary.Write(f, binary.LittleEndian, &nRows); err != nil {
 			return err
 		}
-		if err := binary.Write(f, binary.LittleEndian, &cef.NumColumns); err != nil {
+		if err := binary.Write(f, binary.LittleEndian, &nColumns); err != nil {
 			return err
 		}
 	} else {
-		if err := binary.Write(f, binary.LittleEndian, &cef.NumColumns); err != nil {
+		if err := binary.Write(f, binary.LittleEndian, &nColumns); err != nil {
 			return err
 		}
-		if err := binary.Write(f, binary.LittleEndian, &cef.NumRows); err != nil {
+		if err := binary.Write(f, binary.LittleEndian, &nRows); err != nil {
 			return err
 		}
 	}
 	// Write the flags
-	if err := binary.Write(f, binary.LittleEndian, &cef.Flags); err != nil {
+	flags := int64(cef.Flags)
+	if err := binary.Write(f, binary.LittleEndian, &flags); err != nil {
 		return err
 	}
 
@@ -92,7 +95,7 @@ func WriteAsCEB(cef *Cef, f *os.File, transposed bool) error {
 	}
 
 	// Currently the skip section is unused
-	nSkip := 0
+	nSkip := int64(0)
 	if err := binary.Write(f, binary.LittleEndian, &nSkip); err != nil {
 		return err
 	}
@@ -114,16 +117,16 @@ func WriteAsCEB(cef *Cef, f *os.File, transposed bool) error {
 
 	// Helper to write attributes
 	writeAttrs := func(attrs []Attribute) error {
-		var nAttrs = len(attrs)
+		var nAttrs = int32(len(attrs))
 		if err := binary.Write(f, binary.LittleEndian, &nAttrs); err != nil {
 			return err
 		}
-		for i := 0; i < nAttrs; i++ {
+		for i := 0; i < int(nAttrs); i++ {
 			if err := writeString(attrs[i].Name); err != nil {
 				return err
 			}
 		}
-		for i := 0; i < nAttrs; i++ {
+		for i := 0; i < int(nAttrs); i++ {
 			for j := 0; j < len(attrs[0].Values); j++ {
 				if err := writeString(attrs[i].Values[j]); err != nil {
 					return err
@@ -279,7 +282,7 @@ func ReadStrt(f *os.File, transposed bool) (*Cef, error) {
 			attr.Name = attr.Name[:len(attr.Name)-1]
 		}
 		for i := nRowAttrs - 1; i < cef.NumColumns; i++ {
-			attr.Values[i-nRowAttrs] = row[i]
+			attr.Values[i-nRowAttrs+1] = row[i]
 		}
 		cef.ColumnAttributes = append(cef.ColumnAttributes, attr)
 
@@ -469,16 +472,22 @@ func readCEB(f *os.File, transposed bool) (*Cef, error) {
 	}
 
 	// Read the column and row counts
-	if err = binary.Read(f, binary.LittleEndian, &cef.NumColumns); err != nil {
+	var nColumns int64
+	var nRows int64
+	var flags int64
+	if err = binary.Read(f, binary.LittleEndian, &nColumns); err != nil {
 		return nil, err
 	}
-	if err = binary.Read(f, binary.LittleEndian, &cef.NumRows); err != nil {
+	cef.NumColumns = int(nColumns)
+	if err = binary.Read(f, binary.LittleEndian, &nRows); err != nil {
 		return nil, err
 	}
+	cef.NumRows = int(nRows)
 	// Read the flags
-	if err = binary.Read(f, binary.LittleEndian, &cef.Flags); err != nil {
+	if err = binary.Read(f, binary.LittleEndian, &flags); err != nil {
 		return nil, err
 	}
+	cef.Flags = int(flags)
 
 	// Read the matrix
 	cef.Matrix = make([]float32, cef.NumColumns*cef.NumRows)

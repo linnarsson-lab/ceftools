@@ -28,8 +28,8 @@ Commands that have been implemented so far
 	cef help			- print help for the cef command
 	cef info            - overview of file contents
 	cef drop 			- drop attribute(s) or header(s)
-	cef import			- input as CEF or CEB, output as CEB
-	cef export			- input as CEB or CEF, output as CEF
+	cef import			- import from STRT, CEF or CEB
+	cef export			- export as CEF
 	cef rescale			- rescale rows (rpkm, tpm or log-transformed)
 	cef join		  	- join two datasets by given attributes
 	cef sort			- sort by row attribute or by specific column
@@ -170,13 +170,13 @@ Future commands
 
 Future repo tools
 
+	cef repo --create <name>			- Create a repository
 	cef repo --put "repo/dataset"		- Upload a dataset
 	cef repo --delete "repo/dataset"	- Remove a dataset
 	cef repo --get "repo/dataset"		- Get a dataset from given repo
-	cef repo							- List all non-empty repositories
-	cef repo --all						- List all repositories
+	cef repo --list						- List repositories
 	cef repo --content <repo>			- List the datasets in a given repo
-	cef repo --about <repo>				- Show information about given repo (Owner, description, ...)
+	cef repo --about <repo>				- Show information about given repo (owner, description, ...)
 
 	cef repo --put "slinnarsson/cortex" --desc "Data from Zeisel et al. Science 2015"
 

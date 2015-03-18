@@ -5,6 +5,8 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/slinnarsson/ceftools"
 	"os"
+	"strconv"
+	"strings"
 )
 
 func main() {
@@ -29,10 +31,10 @@ func main() {
 	var add_header = add.Flag("header", "Header to add, in the form 'name=value'").Short('h').String()
 	var add_attr = add.Flag("attr", "Attribute to add, in the form 'name=value' (value can be '(row)')").Short('a').String()
 
-	//	var cmdselect = app.Command("select", "Select rows that match criteria (and drop the rest)")
-	//	var select_rows = cmdselect.Flag("range", "Select a range of rows (colon-separated, 1-based)").String()
-	//	var select_where = cmdselect.Flag("where", "Select rows with specific value for attribute ('attr=value')").String()
-	//	var select_except = cmdselect.Flag("except", "Invert selection").Bool()
+	var cmdselect = app.Command("select", "Select rows that match criteria (and drop the rest)")
+	var select_range = cmdselect.Flag("range", "Select a range of rows (like '10-90')").String()
+	//var select_where = cmdselect.Flag("where", "Select rows with specific value for attribute ('attr=value')").String()
+	//var select_except = cmdselect.Flag("except", "Invert selection").Bool()
 
 	var rescale = app.Command("rescale", "Rescale values by rows")
 	var rescale_method = rescale.Flag("method", "Method to use (log, tpm or rpkm)").Short('m').Required().Enum("log", "tpm", "rpkm")
@@ -81,6 +83,32 @@ func main() {
 			if err = ceftools.CmdImport(*app_transpose); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 			}
+		}
+		return
+	case cmdselect.FullCommand():
+		if *select_range != "" {
+			temp := strings.Split(*select_range, "-")
+			if len(temp) != 2 {
+				fmt.Fprintln(os.Stderr, "Invalid range specification (should be like '1-10', '-20', or '100-')")
+				return
+			}
+			from := 1
+			if temp[0] != "" {
+				from, err = strconv.Atoi(temp[0])
+				if err != nil {
+					fmt.Fprintln(os.Stderr, "Invalid range specification (should be like '1-10', '-20', or '100-')")
+					return
+				}
+			}
+			to := -1
+			if temp[1] != "" {
+				to, err = strconv.Atoi(temp[1])
+				if err != nil {
+					fmt.Fprintln(os.Stderr, "Invalid range specification (should be like '1-10', '-20', or '100-')")
+					return
+				}
+			}
+			ceftools.CmdSelectRange(from, to, *app_transpose)
 		}
 		return
 	case export.FullCommand():
@@ -172,5 +200,8 @@ func main() {
 			}
 		}
 		fmt.Fprintln(os.Stderr, "")
+		return
+	default:
+		kingpin.Usage()
 	}
 }
