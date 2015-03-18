@@ -48,9 +48,9 @@ CEF files are tab-delimited text files in [UTF-8](http://en.wikipedia.org/wiki/U
 
 Each row has the same number of tab-separated fields, equal to `max(7, column count + row attribute count + 1)`. In other words, the entire file is a rectangular tab-delimited matrix, with at least seven columns. Carriage returns before newline characters are silently removed. Fields may be quoted using double quotes; these are silently removed when fields are read. Tabs and newlines are allowed inside a quoted field.
 
-The first line defines the file structure. It begins 'CEF', followed by header count, column count, row count, column attribute count, row attribute count, and the `Flags` value. 
+The first line defines the file structure. It begins 'CEF', followed by header count, row attribute count, column attribute count, row count, column count, and the `Flags` value. 
 
-This is followed by header lines, which are name-value pairs, with the name in the first column and the value in the second. There are no restrictions on either the names or the values, except that they cannot contain tabs, newlines or carriage returns.
+This is followed by header lines, which are name-value pairs, with the name in the first column and the value in the second. There are no restrictions on either the names or the values. The order of headers is not necessarily preserved when CEF files are read and written. There can be multiple headers with the same name.
 
 Next, the column attributes are given, each in a single row with an offset of `(row attribute count)`. Finally, the rows are given, starting with row attributes, and followed by the values of the main matrix. Values are represented in text as decimal floating-point numbers with no exponent (e.g. `-142.03939`) and must fit in a 32-bit IEEE-754 floating point number.
 

@@ -31,10 +31,10 @@ func Write(cef *Cef, f *os.File, transposed bool) error {
 	// Write the header line
 	row[0] = "CEF"
 	row[1] = strconv.Itoa(len(cef.Headers))
-	row[2] = strconv.Itoa(cef.NumColumns)
-	row[3] = strconv.Itoa(cef.NumRows)
-	row[4] = strconv.Itoa(len(cef.ColumnAttributes))
-	row[5] = strconv.Itoa(len(cef.RowAttributes))
+	row[2] = strconv.Itoa(len(cef.RowAttributes))
+	row[3] = strconv.Itoa(len(cef.ColumnAttributes))
+	row[4] = strconv.Itoa(cef.NumRows)
+	row[5] = strconv.Itoa(cef.NumColumns)
 	row[6] = strconv.Itoa(cef.Flags)
 	if transposed {
 		row[2] = strconv.Itoa(cef.NumRows)
@@ -219,21 +219,21 @@ func Read(f *os.File, transposed bool) (*Cef, error) {
 	if err != nil {
 		return nil, errors.New("Header count (row 1, column 2) is not a valid integer")
 	}
-	nColumns, err := strconv.Atoi(row[2])
+	nRowAttrs, err := strconv.Atoi(row[2])
 	if err != nil {
-		return nil, errors.New("Column count (row 1, column 3) is not a valid integer")
+		return nil, errors.New("Row attribute count (row 1, column 6) is not a valid integer")
 	}
-	nRows, err := strconv.Atoi(row[3])
-	if err != nil {
-		return nil, errors.New("Row count (row 1, column 4) is not a valid integer")
-	}
-	nColumnAttrs, err := strconv.Atoi(row[4])
+	nColumnAttrs, err := strconv.Atoi(row[3])
 	if err != nil {
 		return nil, errors.New("Column attribute count (row 1, column 5) is not a valid integer")
 	}
-	nRowAttrs, err := strconv.Atoi(row[5])
+	nRows, err := strconv.Atoi(row[4])
 	if err != nil {
-		return nil, errors.New("Row attribute count (row 1, column 6) is not a valid integer")
+		return nil, errors.New("Row count (row 1, column 4) is not a valid integer")
+	}
+	nColumns, err := strconv.Atoi(row[5])
+	if err != nil {
+		return nil, errors.New("Column count (row 1, column 3) is not a valid integer")
 	}
 	flags, err := strconv.Atoi(row[6])
 	if err != nil {
