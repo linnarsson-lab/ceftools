@@ -32,11 +32,12 @@ Commands that have been implemented so far
 	cef sort			- sort by row attribute or by specific column
 	cef add 			- add attribute or header with constant value 
 	cef transpose 		- transpose the file
+	cef select			- select rows that match given criteria
 
-Commands operate on rows by default. For example `drop` can be used to remove row attributes, but not column attributes. Every command accepts a `--bycol` parameter to operate instead on columns. For example, to remove column attribute `Gene` then sort on column attribute `Length`:
+Commands operate on rows by default. For example `drop` can be used to remove row attributes, but not column attributes. Use the global `--bycol` flag to operate instead on columns. For example, to remove column attribute `Gene` then sort on column attribute `Length`:
 
 ```
-< infile.ceb cef --bycol drop Gene | cef --bycol sort Length > outfile.cef 
+< infile.cef cef --bycol drop Gene | cef --bycol sort Length > outfile.cef 
 ```
 
 
@@ -73,18 +74,16 @@ Note that a CEF file can have zero row attributes, zero column attributes, and e
 
 	Merge headers when joining
 	Left, right joins
+	Select by row values
 	Sort by specific column
 	Sort by cv/mean offset (https://github.com/glycerine/zettalm)
 	Parsers and generators for R, Python, MATLAB, Mathematica, Java, 
 	Test suite for parsers and generators
 	Validator for CEF files
 	Cloud-based dataset manager
-	Internal pipes
-	Memory-mapped files
 
 Future commands
 
-	cef select			- select rows that match given criteria
 	cef aggregate		- calculate aggregate statistics for every row
 	cef groupby			- group rows that share a row attribute, and aggregate values
 	cef validate		- verify that the input file conforms to the CEB or CEF standard

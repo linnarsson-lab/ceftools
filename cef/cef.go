@@ -14,13 +14,13 @@ func main() {
 	var versionString = fmt.Sprintf("ceftools v%v.%v (C) 2015 Sten Linnarsson <http://linnarssonlab.org/>", ceftools.MajorVersion, ceftools.MinorVersion)
 
 	var app = kingpin.New("cef", versionString)
-	var app_bycol = app.Flag("bycol", "Apply command by columns instead of by rows").Short('t').Bool()
+	var app_bycol = app.Flag("bycol", "Apply command by columns instead of by rows").Short('c').Bool()
 
 	var info = app.Command("info", "Show a summary of the file contents")
 	var test = app.Command("test", "Perform an internal test")
 	var transpose = app.Command("transpose", "Transpose rows and columns")
 	var cmdimport = app.Command("import", "Import from a legacy format")
-	var import_format = cmdimport.Flag("format", "The file format to expect").Required().Short('f').String()
+	var import_format = cmdimport.Flag("format", "The file format to expect ('strt')").Required().Short('f').String()
 
 	var drop = app.Command("drop", "Remove attributes")
 	var drop_attrs = drop.Flag("attrs", "Row attribute(s) to remove (case-sensitive, comma-separated)").Short('a').String()
