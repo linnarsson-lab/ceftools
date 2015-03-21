@@ -2,9 +2,11 @@
 
 Tools for manipulating cell expression format (CEF) files.
 
+## Getting started
+
 **Note: ceftools is not yet ready for use, nor do I know when it will be**
 
-You can download the most recent [Mac OS X binary](cef/cef), named `cef`. To use it, click **View Raw** and save it to your computer. In your Terminal, navigate to the file, make it executable (`chmod uga+x ./cef`) and then run `./cef help`.
+You can download alpha versions for all platforms on the [release page](https://github.com/linnarsson-group/ceftools/releases).
 
 ## Overview
 
