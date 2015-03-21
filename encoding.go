@@ -37,10 +37,10 @@ func Write(cef *Cef, f *os.File, transposed bool) error {
 	row[5] = strconv.Itoa(cef.NumColumns)
 	row[6] = strconv.Itoa(cef.Flags)
 	if transposed {
-		row[2] = strconv.Itoa(cef.NumRows)
-		row[3] = strconv.Itoa(cef.NumColumns)
-		row[4] = strconv.Itoa(len(cef.RowAttributes))
-		row[5] = strconv.Itoa(len(cef.ColumnAttributes))
+		row[2] = strconv.Itoa(len(cef.ColumnAttributes))
+		row[3] = strconv.Itoa(len(cef.RowAttributes))
+		row[4] = strconv.Itoa(cef.NumColumns)
+		row[5] = strconv.Itoa(cef.NumRows)
 	}
 	write(row)
 
@@ -73,7 +73,7 @@ func Write(cef *Cef, f *os.File, transposed bool) error {
 			for j := 0; j < calen; j++ {
 				row[j] = cef.ColumnAttributes[j].Values[i]
 				for k := 0; k < cef.NumRows; k++ {
-					row[k+ralen+1] = strconv.FormatFloat(float64(cef.Get(i, k)), 'f', -1, 64)
+					row[k+calen+1] = strconv.FormatFloat(float64(cef.Get(i, k)), 'f', -1, 64)
 				}
 			}
 			write(row)
@@ -256,7 +256,6 @@ func Read(f *os.File, transposed bool) (*Cef, error) {
 		cef.Headers[i].Name = row[0]
 		cef.Headers[i].Value = row[1]
 	}
-
 	// Read the column attributes
 	cef.ColumnAttributes = make([]Attribute, nColumnAttrs)
 	for i := 0; i < nColumnAttrs; i++ {
@@ -311,6 +310,7 @@ func Read(f *os.File, transposed bool) (*Cef, error) {
 			}
 		}
 	}
+
 	// Exchange the rows and columns
 	if transposed {
 		temp1 := cef.NumRows

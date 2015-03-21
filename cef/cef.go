@@ -32,7 +32,7 @@ func main() {
 	var add_attr = add.Flag("attr", "Attribute to add, in the form 'name=value' (value can be '(row)')").Short('a').String()
 
 	var cmdselect = app.Command("select", "Select rows that match criteria (and drop the rest)")
-	var select_range = cmdselect.Flag("range", "Select a range of rows (like '10-90')").String()
+	var select_range = cmdselect.Flag("range", "Select a range of rows (like '10:90')").String()
 	//var select_where = cmdselect.Flag("where", "Select rows with specific value for attribute ('attr=value')").String()
 	var select_except = cmdselect.Flag("except", "Invert selection").Bool()
 

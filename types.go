@@ -2,6 +2,8 @@ package ceftools
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"sort"
 	"strconv"
 )
@@ -265,6 +267,8 @@ func (left Cef) Join(right *Cef, leftAttr string, rightAttr string) (*Cef, error
 			for j := 0; j < len(right.RowAttributes); j++ {
 				result.RowAttributes[j+len(left.RowAttributes)].Values = append(result.RowAttributes[j+len(left.RowAttributes)].Values, right.RowAttributes[j].Values[i])
 			}
+		} else {
+			fmt.Fprintf(os.Stderr, "Dropped %v", rightIndex[i])
 		}
 	}
 	result.NumRows = numRows
