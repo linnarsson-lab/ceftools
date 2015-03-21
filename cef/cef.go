@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/alecthomas/kingpin"
-	"github.com/slinnarsson/ceftools"
+	"github.com/linnarsson-group/ceftools"
 	"os"
 	"strconv"
 	"strings"
@@ -34,7 +34,7 @@ func main() {
 	var cmdselect = app.Command("select", "Select rows that match criteria (and drop the rest)")
 	var select_range = cmdselect.Flag("range", "Select a range of rows (like '10-90')").String()
 	//var select_where = cmdselect.Flag("where", "Select rows with specific value for attribute ('attr=value')").String()
-	//var select_except = cmdselect.Flag("except", "Invert selection").Bool()
+	var select_except = cmdselect.Flag("except", "Invert selection").Bool()
 
 	var rescale = app.Command("rescale", "Rescale values by rows")
 	var rescale_method = rescale.Flag("method", "Method to use (log, tpm or rpkm)").Short('m').Required().Enum("log", "tpm", "rpkm")
@@ -106,7 +106,7 @@ func main() {
 					return
 				}
 			}
-			ceftools.CmdSelectRange(from, to, *app_bycol)
+			ceftools.CmdSelectRange(from, to, *app_bycol, *select_except)
 		}
 		return
 	case transpose.FullCommand():

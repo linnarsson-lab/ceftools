@@ -2,11 +2,9 @@
 
 Tools for manipulating cell expression format (CEF) files.
 
-## Getting started
-
 **Note: ceftools is not yet ready for use, nor do I know when it will be**
 
-You can download alpha versions for all platforms on the [release page](https://github.com/linnarsson-group/ceftools/releases).
+You can download pre-release alpha versions on the [Releases page](https://github.com/linnarsson-group/ceftools/releases).
 
 ## Overview
 
@@ -48,13 +46,15 @@ Commands operate on rows by default. For example `drop` can be used to remove ro
 
 CEF files are tab-delimited text files in [UTF-8](http://en.wikipedia.org/wiki/UTF-8) encoding, no [BOM](http://en.wikipedia.org/wiki/Byte_order_mark). The first four characters are 'CEF\t' (that's a single tab character at the end), equivalent to the hexadecimal 4-byte number 0x09464543. CEF files are guaranteed to always begin with these four bytes, which can be used to identify the file format in the absence of a file name extension.
 
-Each row has the same number of tab-separated fields, equal to `max(7, column count + row attribute count + 1)`. In other words, the entire file is a rectangular tab-delimited matrix, with at least seven columns. Carriage returns before newline characters are silently removed. Fields may be quoted using double quotes; these are silently removed when fields are read. Tabs and newlines are allowed inside a quoted field.
+Each row has the same number of tab-separated fields, equal to `max(7, column count + row attribute count + 1)`. In other words, the entire file is a rectangular tab-delimited matrix, with at least seven columns. CEF file *readers* should accept CEF files that have less than the required number of fields in any row, and the missing fields should be interpreted as empty strings (but empty strings should not be interpreted as zeros; thus zeros must always be explicitly represented as '0'). CEF file *writers* should always generate a rectangular tab-delimited matrix.
+
+Carriage returns before newline characters are silently removed. Fields may be quoted using double quotes; these are silently removed when fields are read. Tabs and newlines are allowed inside a quoted field.
 
 The first line defines the file structure. It begins 'CEF', followed by header count, row attribute count, column attribute count, row count, column count, and the `Flags` value. 
 
 This is followed by header lines, which are name-value pairs, with the name in the first column and the value in the second. There are no restrictions on either the names or the values. The order of headers is not necessarily preserved when CEF files are read and written. There can be multiple headers with the same name.
 
-Next, the column attributes are given, each in a single row with an offset of `(row attribute count)`. Finally, the rows are given, starting with row attributes, and followed by the values of the main matrix. Values are represented in text as decimal floating-point numbers with no exponent (e.g. `-142.03939`) and must fit in a 32-bit IEEE-754 floating point number.
+Next, the column attributes are given, each in a single row with an offset of `(row attribute count)`. Finally, the rows are given, starting with row attributes, and followed by the values of the main matrix. Values are represented in text as decimal floating-point numbers with no exponent (e.g. `-142.03939`) and must fit in a 32-bit IEEE-754 floating point number. The order of row and column attributes need to be preserved.
 
 Example of a file with 1 header, 4 Row Attributes, 2 Column Attributes, 345 Rows, 123 Columns. The last number (0) in the first row is the `Flags` value, currently unused.
 
