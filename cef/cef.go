@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/alecthomas/kingpin"
-	"github.com/linnarsson-group/ceftools"
+	"github.com/linnarsson-lab/ceftools"
 	"os"
 	"strconv"
 	"strings"

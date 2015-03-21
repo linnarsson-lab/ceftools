@@ -4,7 +4,7 @@ Tools for manipulating cell expression format (CEF) files.
 
 **Note: ceftools is not yet ready for use, nor do I know when it will be**
 
-You can download pre-release alpha versions on the [Releases page](https://github.com/linnarsson-group/ceftools/releases).
+You can download pre-release alpha versions on the [Releases page](https://github.com/linnarsson-lab/ceftools/releases).
 
 ## Overview
 
