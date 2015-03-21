@@ -17,7 +17,7 @@ ceftools is implemented as a command-line utility called `cef`, which operates o
 values. The annotation consists of headers (name-value pairs) as well as row and column attributes. It supports useful operations such as filtering, sorting, splitting, joining and transposing the input. Multiple commands can be chained to perform more complex operations.
 
 ceftools processes files in the text-based CEF format ('cell expression format', `.cef`). CEF files are human-readable, tab-delimited 
-text files that can be easily parsed or imported into e.g. Excel. 
+text files that can be easily parsed and generated from any scripting language. 
 
 ## Synopsis
 
