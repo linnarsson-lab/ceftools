@@ -75,7 +75,6 @@ Note that a CEF file can have zero row attributes, zero column attributes, and e
 ### To-do list
 
 	Left, right joins
-	Select by row values
 	Sort by specific column
 	Sort by cv/mean offset (https://github.com/glycerine/zettalm)
 	Parsers and generators for R, Python, MATLAB, Mathematica, Java, 

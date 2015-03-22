@@ -15,8 +15,8 @@ func CmdSort(sort_by string, sort_numerical bool, reverse bool, bycol bool) erro
 		return err
 	}
 	var result *Cef
-	if sort_numerical {
-		result, err = cef.SortByRowAttributeNumerical(sort_by, reverse)
+	if strings.Contains(sort_by, "=") || sort_numerical { // If there is a '=' we're sorting on column values, so numerical by definition
+		result, err = cef.SortNumerical(sort_by, reverse)
 	} else {
 		result, err = cef.SortByRowAttribute(sort_by, reverse)
 	}

@@ -6,6 +6,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 type Attribute struct {
@@ -124,27 +125,61 @@ func (a indexedNumbers) Len() int           { return len(a) }
 func (a indexedNumbers) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a indexedNumbers) Less(i, j int) bool { return a[i].value < a[j].value }
 
-func (cef Cef) SortByRowAttributeNumerical(attr string, reverse bool) (*Cef, error) {
-	// Find the indexes
-	var index []string
-	for i := 0; i < len(cef.RowAttributes); i++ {
-		if cef.RowAttributes[i].Name == attr {
-			index = cef.RowAttributes[i].Values
+func (cef Cef) SortNumerical(by string, reverse bool) (*Cef, error) {
+	recs := make([]numberRec, cef.NumRows)
+
+	temp := strings.Split(by, "=")
+	if len(temp) == 2 {
+		// Find the column attribute
+		colAttr := -1
+		for i := 0; i < len(cef.ColumnAttributes); i++ {
+			if cef.ColumnAttributes[i].Name == temp[0] {
+				colAttr = i
+				break
+			}
 		}
-	}
-	if index == nil {
-		return nil, errors.New("Attribute not found when attempting to sort: " + attr)
+		if colAttr == -1 {
+			return nil, errors.New("Column attribute not found when attempting to select: " + temp[0])
+		}
+
+		// Find the column that matches the value
+		col := -1
+		for i := 0; i < cef.NumColumns; i++ {
+			if cef.ColumnAttributes[colAttr].Values[i] == temp[1] {
+				col = i
+				break
+			}
+		}
+		if col == -1 {
+			return nil, errors.New("Column attribute value not found when attempting to select: " + temp[1])
+		}
+
+		// Make the list of values
+		for i := 0; i < cef.NumRows; i++ {
+			recs[i] = numberRec{cef.Get(col, i), i}
+		}
+	} else {
+		// Find the indexes
+		var index []string
+		for i := 0; i < len(cef.RowAttributes); i++ {
+			if cef.RowAttributes[i].Name == by {
+				index = cef.RowAttributes[i].Values
+			}
+		}
+		if index == nil {
+			return nil, errors.New("Attribute not found when attempting to sort: " + by)
+		}
+
+		// Collect the values to be sorted
+		for i := 0; i < len(index); i++ {
+			value, err := strconv.ParseFloat(index[i], 32)
+			if err != nil {
+				value = 0
+			}
+			recs[i] = numberRec{float32(value), i}
+		}
 	}
 
-	// Collect the values to be sorted
-	recs := make([]numberRec, len(index))
-	for i := 0; i < len(index); i++ {
-		value, err := strconv.ParseFloat(index[i], 32)
-		if err != nil {
-			value = 0
-		}
-		recs[i] = numberRec{float32(value), i}
-	}
 	// Sort them
 	sort.Sort(indexedNumbers(recs))
 
