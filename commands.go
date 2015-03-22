@@ -8,6 +8,61 @@ import (
 	"strings"
 )
 
+func CmdAggregate(cv bool, mean bool, noise bool, bycol bool) error {
+	// Read the input
+	cef, err := Read(os.Stdin, bycol)
+	if err != nil {
+		return err
+	}
+
+	if mean {
+		meanAttr := Attribute{"Mean", make([]string, cef.NumRows)}
+		cef.RowAttributes = append(cef.RowAttributes, meanAttr)
+		for i := 0; i < cef.NumRows; i++ {
+			row := cef.GetRow(i)
+			sum := 0.0
+			for j := 0; j < len(row); j++ {
+				sum = sum + float64(row[j])
+			}
+			sum = sum / float64(len(row))
+			meanAttr.Values[i] = strconv.FormatFloat(sum, 'f', -1, 64)
+		}
+	}
+
+	// Write the CEB file
+	if err := Write(cef, os.Stdout, bycol); err != nil {
+		return err
+	}
+	return nil
+}
+
+func CmdRename(attr string, bycol bool) error {
+	temp := strings.Split(attr, "=")
+	if len(temp) != 2 {
+		return errors.New("Invalid rename (should be --attr old=new)")
+	}
+
+	// Read the input
+	cef, err := Read(os.Stdin, bycol)
+	if err != nil {
+		return err
+	}
+
+	// Rename
+	for i := 0; i < len(cef.RowAttributes); i++ {
+		if cef.RowAttributes[i].Name == temp[0] {
+			cef.RowAttributes[i].Name = temp[1]
+			break // Rename only the first instance if there are multiple with same name
+		}
+	}
+
+	// Write the CEB file
+	if err := Write(cef, os.Stdout, bycol); err != nil {
+		return err
+	}
+	return nil
+}
+
 func CmdSort(sort_by string, sort_numerical bool, reverse bool, bycol bool) error {
 	// Read the input
 	cef, err := Read(os.Stdin, bycol)

@@ -22,6 +22,9 @@ func main() {
 	var cmdimport = app.Command("import", "Import from a legacy format")
 	var import_format = cmdimport.Flag("format", "The file format to expect ('strt')").Required().Short('f').String()
 
+	var rename = app.Command("rename", "Rename attribute")
+	var rename_attr = rename.Flag("attr", "The attribute to rename ('old=new')").Required().Short('c').String()
+
 	var drop = app.Command("drop", "Remove attributes")
 	var drop_attrs = drop.Flag("attrs", "Row attribute(s) to remove (case-sensitive, comma-separated)").Short('a').String()
 	var drop_headers = drop.Flag("headers", "Headers to remove (case-sensitive, comma-separated)").Short('h').String()
@@ -48,7 +51,11 @@ func main() {
 	var sort_by = sort.Flag("by", "The attribute or column ('column=value') to sort by").Required().String()
 	var sort_reverse = sort.Flag("reverse", "Sort in reverse order").Short('r').Bool()
 	var sort_numerical = sort.Flag("numerical", "Numerical sort (default: alphabetical)").Short('n').Bool()
-	//	var sort_bycvmean = sort.Flag("cvmean", "Sort by offset to a CV-vs-mean least-squares fit").Bool()
+
+	var aggregate = app.Command("aggregate", "Calculate aggregate statistics per row")
+	var aggregate_cv = aggregate.Flag("cv", "Calculate coefficient of variation (CV)").Bool()
+	var aggregate_mean = aggregate.Flag("mean", "Calculate mean").Bool()
+	var aggregate_noise = aggregate.Flag("noise", "Calculate CV-vs-mean noise").Bool()
 
 	// Parse the command line
 	var parsed, err = app.Parse(os.Args[1:])
@@ -59,6 +66,16 @@ func main() {
 
 	// Handle the sub-commands
 	switch kingpin.MustParse(parsed, nil) {
+	case aggregate.FullCommand():
+		if err = ceftools.CmdAggregate(*aggregate_cv, *aggregate_mean, *aggregate_noise, *app_bycol); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		return
+	case rename.FullCommand():
+		if err = ceftools.CmdRename(*rename_attr, *app_bycol); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		return
 	case add.FullCommand():
 		if err = ceftools.CmdAdd(*add_attr, *add_header, *app_bycol); err != nil {
 			fmt.Fprintln(os.Stderr, err)
