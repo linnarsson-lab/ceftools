@@ -30,6 +30,60 @@ func CmdSort(sort_by string, sort_numerical bool, reverse bool, bycol bool) erro
 	return nil
 }
 
+func CmdSelect(selector string, bycol bool, except bool) error {
+	// Read the input
+	cef, err := Read(os.Stdin, bycol)
+	if err != nil {
+		return err
+	}
+
+	// Parse the selector
+	av := strings.Split(selector, "=")
+	if len(av) != 2 {
+		return errors.New("Invalid --where clause (should be 'attr=value')")
+	}
+	attr := av[0]
+	value := av[1]
+
+	// Make empty slices reusing the existing storage
+	tempMatrix := cef.Matrix[:0]
+	tempRowAttrValues := make([]Attribute, len(cef.RowAttributes))
+	attrIndex := -1
+	for i := 0; i < len(tempRowAttrValues); i++ {
+		tempRowAttrValues[i] = Attribute{cef.RowAttributes[i].Name, cef.RowAttributes[i].Values[:0]}
+		if cef.RowAttributes[i].Name == attr {
+			attrIndex = i
+		}
+	}
+	if attrIndex == -1 {
+		return errors.New("Attribute not found when attempting to select")
+	}
+
+	// Scan all rows for matches and append them
+	nSelected := 0
+	for i := 0; i < cef.NumRows; i++ {
+		if cef.RowAttributes[attrIndex].Values[i] == value {
+			nSelected++
+			tempMatrix = append(tempMatrix, cef.GetRow(i)...)
+			for j := 0; j < len(cef.RowAttributes); j++ {
+				tempRowAttrValues[j].Values = append(tempRowAttrValues[j].Values, cef.RowAttributes[j].Values[i])
+			}
+		}
+	}
+
+	// Replace the orginals with the filtered copies
+	cef.Matrix = tempMatrix
+	for i := 0; i < len(cef.RowAttributes); i++ {
+		cef.RowAttributes[i] = tempRowAttrValues[i]
+	}
+	cef.NumRows = nSelected
+
+	// Write the CEB file
+	if err := Write(cef, os.Stdout, bycol); err != nil {
+		return err
+	}
+	return nil
+}
 func CmdSelectRange(from int, to int, bycol bool, except bool) error {
 	// Read the input
 	cef, err := Read(os.Stdin, bycol)

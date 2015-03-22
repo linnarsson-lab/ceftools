@@ -33,7 +33,7 @@ func main() {
 
 	var cmdselect = app.Command("select", "Select rows that match criteria (and drop the rest)")
 	var select_range = cmdselect.Flag("range", "Select a range of rows (like '10:90')").String()
-	//var select_where = cmdselect.Flag("where", "Select rows with specific value for attribute ('attr=value')").String()
+	var select_where = cmdselect.Flag("where", "Select rows with specific value for attribute ('attr=value')").String()
 	var select_except = cmdselect.Flag("except", "Invert selection").Bool()
 
 	var rescale = app.Command("rescale", "Rescale values by rows")
@@ -85,6 +85,10 @@ func main() {
 		return
 	case cmdselect.FullCommand():
 		if *select_range != "" {
+			if *select_where != "" {
+				fmt.Fprintln(os.Stderr, "Cannot select using --range and --where simultaneously (use a pipe)")
+				return
+			}
 			temp := strings.Split(*select_range, ":")
 			if len(temp) != 2 {
 				fmt.Fprintln(os.Stderr, "Invalid range specification (should be like '1:10', ':20', or '100:')")
@@ -106,9 +110,17 @@ func main() {
 					return
 				}
 			}
-			ceftools.CmdSelectRange(from, to, *app_bycol, *select_except)
+			if err := ceftools.CmdSelectRange(from, to, *app_bycol, *select_except); err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+			}
+			return
 		}
-		return
+		if *select_where != "" {
+			if err := ceftools.CmdSelect(*select_where, *app_bycol, *select_except); err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+			}
+			return
+		}
 	case transpose.FullCommand():
 		// Read the input
 		var cef, err = ceftools.Read(os.Stdin, true)

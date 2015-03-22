@@ -74,7 +74,6 @@ Note that a CEF file can have zero row attributes, zero column attributes, and e
 
 ### To-do list
 
-	Merge headers when joining
 	Left, right joins
 	Select by row values
 	Sort by specific column

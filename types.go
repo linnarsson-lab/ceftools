@@ -313,5 +313,19 @@ func (left Cef) Join(right *Cef, leftAttr string, rightAttr string) (*Cef, error
 	}
 	result.RowAttributes = temp
 
+	// Merge headers
+	for _, hdr := range right.Headers {
+		var found bool
+		for _, existing := range left.Headers {
+			if existing.Name == hdr.Name && existing.Value == hdr.Value {
+				found = true
+				break
+			}
+		}
+		if !found {
+			result.Headers = append(result.Headers, hdr)
+		}
+	}
+
 	return result, nil
 }
