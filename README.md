@@ -25,12 +25,13 @@ Commands that have been implemented so far
 
 	cef help			- print help for the cef command
 	cef info            - overview of file contents
+	cef add 			- add attribute or header with constant value 
+	cef rename			- rename attribute
 	cef drop 			- drop attribute(s) or header(s)
 	cef import			- import from STRT
 	cef rescale			- rescale rows (rpkm, tpm or log-transformed)
 	cef join		  	- join two datasets by given attributes
 	cef sort			- sort by row attribute or by specific column
-	cef add 			- add attribute or header with constant value 
 	cef transpose 		- transpose the file
 	cef select			- select rows that match given criteria
 	cef aggregate		- calculate aggregate statistics for every row
@@ -75,6 +76,8 @@ Note that a CEF file can have zero row attributes, zero column attributes, and e
 
 ### To-do list
 
+	Tutorials for common tasks
+	Rescale by given column attribute (mean centered)
 	Aggregate CV, noise (more?)
 	Left, right joins
 	Sort by cv/mean offset (https://github.com/glycerine/zettalm)
