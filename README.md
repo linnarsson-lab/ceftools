@@ -42,6 +42,7 @@ Commands operate on rows by default. For example `drop` can be used to remove ro
 < infile.cef cef --bycol drop Gene | cef --bycol sort Length > outfile.cef 
 ```
 
+Note that since `--bycol` is a global flag it must always be positioned before the command: `cef --bycol <command>`
 
 
 ### CEF file format
@@ -78,9 +79,8 @@ Note that a CEF file can have zero row attributes, zero column attributes, and e
 
 	Tutorials for common tasks
 	Rescale by given column attribute (mean centered)
-	Aggregate CV, noise (more?)
+	Aggregate CV, noise, max, min, maxcor, mincorr
 	Left, right joins
-	Sort by cv/mean offset (https://github.com/glycerine/zettalm)
 	Parsers and generators for R, Python, MATLAB, Mathematica, Java, 
 	Test suite for parsers and generators
 	Validator for CEF files
@@ -104,5 +104,19 @@ Future repo tools
 	cef repo --about <repo>				- Show information about given repo (owner, description, ...)
 
 	cef repo --put "slinnarsson/cortex" --desc "Data from Zeisel et al. Science 2015"
+
+Repo server REST API
+
+	GET /						List repositories
+	PUT /<repo>					Create a repository
+	GET /<repo>					List datasets in repository
+	GET /<repo>/about.json 		Get info about a repository
+	GET /<repo>/<dataset>		Get a dataset
+	PUT /<repo>/<dataset>		Upload a dataset
+	DELETE /<repo>/<dataset>	Delete a dataset
+
+
+
+
 
 
