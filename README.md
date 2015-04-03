@@ -79,7 +79,7 @@ Note that a CEF file can have zero row attributes, zero column attributes, and e
 
 	Tutorials for common tasks
 	Rescale by given column attribute (mean centered)
-	Aggregate CV, noise, max, min, maxcor, mincorr
+	Aggregate noise, maxcor, mincorr
 	Left, right joins
 	Parsers and generators for R, Python, MATLAB, Mathematica, Java, 
 	Test suite for parsers and generators

@@ -55,7 +55,9 @@ func main() {
 	var aggregate = app.Command("aggregate", "Calculate aggregate statistics per row")
 	var aggregate_cv = aggregate.Flag("cv", "Calculate coefficient of variation (CV)").Bool()
 	var aggregate_mean = aggregate.Flag("mean", "Calculate mean").Bool()
-	var aggregate_noise = aggregate.Flag("noise", "Calculate CV-vs-mean noise").Bool()
+	var aggregate_stdev = aggregate.Flag("stdev", "Calculate standard deviation").Bool()
+	var aggregate_max = aggregate.Flag("max", "Calculate max value").Bool()
+	var aggregate_min = aggregate.Flag("min", "Calculate min value").Bool()
 
 	// Parse the command line
 	var parsed, err = app.Parse(os.Args[1:])
@@ -67,7 +69,7 @@ func main() {
 	// Handle the sub-commands
 	switch kingpin.MustParse(parsed, nil) {
 	case aggregate.FullCommand():
-		if err = ceftools.CmdAggregate(*aggregate_cv, *aggregate_mean, *aggregate_noise, *app_bycol); err != nil {
+		if err = ceftools.CmdAggregate(*aggregate_mean, *aggregate_cv, *aggregate_stdev, *aggregate_max, *aggregate_min, *app_bycol); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return

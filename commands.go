@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func CmdAggregate(cv bool, mean bool, noise bool, bycol bool) error {
+func CmdAggregate(mean bool, cv bool, stdev bool, maxValue bool, minValue bool, bycol bool) error {
 	// Read the input
 	cef, err := Read(os.Stdin, bycol)
 	if err != nil {
@@ -29,6 +29,71 @@ func CmdAggregate(cv bool, mean bool, noise bool, bycol bool) error {
 		}
 	}
 
+	if cv {
+		cvAttr := Attribute{"CV", make([]string, cef.NumRows)}
+		cef.RowAttributes = append(cef.RowAttributes, cvAttr)
+		for i := 0; i < cef.NumRows; i++ {
+			row := cef.GetRow(i)
+			mean := 0.0
+			for j := 0; j < len(row); j++ {
+				mean = mean + float64(row[j])
+			}
+			mean = mean / float64(len(row))
+
+			stdev := 0.0
+			for j := 0; j < len(row); j++ {
+				stdev += (float64(row[j]) - mean) * (float64(row[j]) - mean)
+			}
+			if mean == 0 {
+				mean = 1
+			}
+			cvAttr.Values[i] = strconv.FormatFloat(math.Sqrt(stdev/float64(len(row)))/mean, 'f', -1, 64)
+		}
+	}
+
+	if stdev {
+		stdevAttr := Attribute{"Stdev", make([]string, cef.NumRows)}
+		cef.RowAttributes = append(cef.RowAttributes, stdevAttr)
+		for i := 0; i < cef.NumRows; i++ {
+			row := cef.GetRow(i)
+			mean := 0.0
+			for j := 0; j < len(row); j++ {
+				mean = mean + float64(row[j])
+			}
+			mean = mean / float64(len(row))
+
+			stdev := 0.0
+			for j := 0; j < len(row); j++ {
+				stdev += (float64(row[j]) - mean) * (float64(row[j]) - mean)
+			}
+			stdevAttr.Values[i] = strconv.FormatFloat(math.Sqrt(stdev/float64(len(row))), 'f', -1, 64)
+		}
+	}
+
+	if maxValue {
+		maxAttr := Attribute{"Max", make([]string, cef.NumRows)}
+		cef.RowAttributes = append(cef.RowAttributes, maxAttr)
+		for i := 0; i < cef.NumRows; i++ {
+			row := cef.GetRow(i)
+			max := float64(row[0])
+			for j := 0; j < len(row); j++ {
+				max = math.Max(max, float64(row[j]))
+			}
+			maxAttr.Values[i] = strconv.FormatFloat(max, 'f', -1, 64)
+		}
+	}
+	if minValue {
+		minAttr := Attribute{"Min", make([]string, cef.NumRows)}
+		cef.RowAttributes = append(cef.RowAttributes, minAttr)
+		for i := 0; i < cef.NumRows; i++ {
+			row := cef.GetRow(i)
+			min := float64(row[0])
+			for j := 0; j < len(row); j++ {
+				min = math.Min(min, float64(row[j]))
+			}
+			minAttr.Values[i] = strconv.FormatFloat(min, 'f', -1, 64)
+		}
+	}
 	// Write the CEB file
 	if err := Write(cef, os.Stdout, bycol); err != nil {
 		return err
