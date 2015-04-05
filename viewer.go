@@ -12,7 +12,7 @@ var height = 0
 var sortreverse = false
 
 func Viewer(bycol bool) error {
-	print("Loading...")
+	println("Loading...")
 
 	// Read the input
 	cef, err := Read(os.Stdin, bycol)
