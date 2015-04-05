@@ -79,11 +79,14 @@ Note that a CEF file can have zero row attributes, zero column attributes, and e
 
 	Tutorials for common tasks
 	Rescale by given column attribute (mean centered)
+	Import simple tables
+	Support old-style Mac line endings
 	Aggregate noise, maxcor, mincorr
 	Left, right joins
 	Parsers and generators for R, Python, MATLAB, Mathematica, Java, 
 	Test suite for parsers and generators
 	Validator for CEF files
+	Fetch dataset from GEO SOFT
 	Cloud-based dataset manager
 
 Future commands
@@ -95,25 +98,23 @@ Future commands
 
 Future repo tools
 
-	cef repo --create <name>			- Create a repository
+	cef repo --create <name>			- Create a repository (receives a key and puts it in .cefrepo)
 	cef repo --put "repo/dataset"		- Upload a dataset
 	cef repo --delete "repo/dataset"	- Remove a dataset
 	cef repo --get "repo/dataset"		- Get a dataset from given repo
 	cef repo --list						- List repositories
 	cef repo --content <repo>			- List the datasets in a given repo
-	cef repo --about <repo>				- Show information about given repo (owner, description, ...)
 
-	cef repo --put "slinnarsson/cortex" --desc "Data from Zeisel et al. Science 2015"
+	cef repo --put "slinnarsson/cortex" --email "sten.linnarsson@ki.se"
 
 Repo server REST API
 
-	GET /						List repositories
-	PUT /<repo>					Create a repository
-	GET /<repo>					List datasets in repository
-	GET /<repo>/about.json 		Get info about a repository
-	GET /<repo>/<dataset>		Get a dataset
-	PUT /<repo>/<dataset>		Upload a dataset
-	DELETE /<repo>/<dataset>	Delete a dataset
+	GET /						List repositories (list all directories)
+	PUT /<repo>					Create a repository (creates a directory, and puts a .cefrepo file there with the key)
+	GET /<repo>					List datasets in repository (lists files in a directory)
+	GET /<repo>/<dataset>		Get a dataset (gets a file from the directory)
+	PUT /<repo>/<dataset>		Upload a dataset (puts a file in the directory)
+	DELETE /<repo>/<dataset>	Delete a dataset (removes a file from the directory)
 
 
 
