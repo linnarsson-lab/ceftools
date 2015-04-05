@@ -59,6 +59,8 @@ func main() {
 	var aggregate_max = aggregate.Flag("max", "Calculate max value").Bool()
 	var aggregate_min = aggregate.Flag("min", "Calculate min value").Bool()
 
+	var view = app.Command("view", "View the file content interactively")
+
 	// Parse the command line
 	var parsed, err = app.Parse(os.Args[1:])
 	if err != nil {
@@ -68,6 +70,11 @@ func main() {
 
 	// Handle the sub-commands
 	switch kingpin.MustParse(parsed, nil) {
+	case view.FullCommand():
+		if err = ceftools.Viewer(*app_bycol); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		return
 	case aggregate.FullCommand():
 		if err = ceftools.CmdAggregate(*aggregate_mean, *aggregate_cv, *aggregate_stdev, *aggregate_max, *aggregate_min, *app_bycol); err != nil {
 			fmt.Fprintln(os.Stderr, err)

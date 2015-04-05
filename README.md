@@ -35,6 +35,8 @@ Commands that have been implemented so far
 	cef transpose 		- transpose the file
 	cef select			- select rows that match given criteria
 	cef aggregate		- calculate aggregate statistics for every row
+	cef view			- interactively navigate the matrix
+
 
 Commands operate on rows by default. For example `drop` can be used to remove row attributes, but not column attributes. Use the global `--bycol` flag to operate instead on columns. For example, to remove column attribute `Gene` then sort on column attribute `Length`:
 
@@ -93,8 +95,6 @@ Future commands
 
 	cef groupby			- group rows that share a row attribute, and aggregate values
 	cef validate		- verify that the input file conforms to the CEB or CEF standard
-	cef view			- interactively navigate the matrix
-	cef browse			- web interface to cef ? (https://github.com/jteeuwen/go-bindata)
 
 Future repo tools
 
