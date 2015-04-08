@@ -34,6 +34,10 @@ text files that can be easily parsed and generated from any scripting language.
 	cef import			- import from STRT
 
 
+## Commands
+
+The examples below make use of the `oligos.cef` sample dataset, which you can download from the [BackSPIN release page](https://github.com/linnarsson-lab/BackSPIN/releases). If you have installed `cef` and have `oligos.cef` in your current working directory, you should be able to run all the examples below without modification.
+
 Commands operate on rows by default. For example `drop` can be used to remove row attributes, but not column attributes. Use the global `--bycol` flag to operate instead on columns. For example, to remove column attribute `Gene` then sort on column attribute `Length`:
 
 ```
@@ -41,14 +45,6 @@ Commands operate on rows by default. For example `drop` can be used to remove ro
 ```
 
 Note that since `--bycol` is a global flag it must always be positioned before the command: `cef --bycol <command>`
-
-## Commands
-
-The examples below make use of the `oligos.cef` sample dataset, which you can download from the [releases](https://github.com/linnarsson-lab/ceftools/releases) page. If you have installed `cef` and have `oligos.cef` in your current working directory, you should be able to run all the examples below without modification.
-
-The commands below are described as operating on rows, which is the default. All commands can be made to operate on columns instead, by preceding the command with the `--bycol` options. For example:
-
-	cef --bycol select --where "Subclass=Oligo1"
 
 
 ### Info
@@ -148,7 +144,7 @@ Synopsis:
 
 Example:
 
-	< oligos.cef cef sort --by "CellID=1772067057_G07 --reverse > oligos_sorted.cef"
+	< oligos.cef cef sort --by "CellID=1772067057_G07" --reverse > oligos_sorted.cef
 
 Output:
 
@@ -187,15 +183,15 @@ Join two datasets by matching up rows that have the same value for an attribute.
 
 Synopsis:
 
-	cef join --with <other.cef> --on "attr1=attr2"		Join STDIN with other.cef, matching attr1 of STDIN with attr2 of other.cef
+	cef join --with <other.cef> --on "attr1=attr2"
 
 This command joins two CEF files, one from standard input (STDIN) and one given by the `--with <other.cef>` option. The result is a new CEF file which has been extended on the right with all the data from 'other.cef' that matches with the existing data in the input CEF file. 
 
+Column attributes of the same name are merged. For example, if both of the input files have column attribute `Age`, the resulting file will have a single column attribute `Age`. But if one file has `Sex` and the other has `Gender`, the output will have two attributes (`Sex` and `Gender`), and missing values will be blank.
+
+Row attributes are merged if they contain identical values for all the retained rows. For example, if both input files have row attributes `Gene` and all retained rows have the same values in the same order, then the output will have only a single row attribute `Gene`. But if there are any differences, then the output will have two row attributes both called `Gene`.
+
 Rows that do not match are silently dropped. 
-
-Column attributes of the same name are merged. For example, of both of the input files have column attribute `Age`, the resulting file will have a single column attribute `Age`. But if one file has `Sex` and the other has `Gender`, the output will have two attributes (`Sex` and `Gender`), and missing values will be blank.
-
-Row attributes are merged if they contain identical values for all the retained rows. For example, if both input files have row attributes `Gene` and all retained rows have the same values in the same order, then the output will have only a single row attribute `Gene`. But if there are any differences, then the result will be twp row attributes both called `Gene`.
 
 
 ### Add
@@ -293,7 +289,7 @@ Notice that the values have been rescaled from X to log(X+1).
 
 The 'tpm' option normalizes each row by dividing by the row sum and multiplying by 1000000.
 
-The 'rpkm' option normalizes each row by dividing by the row sum and by the *length*, and multiplying by 1000. The *length* must be given as a row attribute as indicated using the `--length` option. The length is normally given in basepairs.
+The 'rpkm' option normalizes each row by dividing by the row sum and by the *length*, and multiplying by 1000. The *length* must be given as a row attribute, indicated using the `--length` option. The length is normally given in basepairs.
 
 
 ### Aggregate

@@ -2,7 +2,6 @@ package ceftools
 
 import (
 	"encoding/csv"
-	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -324,7 +323,7 @@ func Read(f *os.File, transposed bool) (*Cef, error) {
 	return cef, nil
 }
 
-
+/*
 func nextString(f *bufio.Reader) string {
 	result := make([]rune, 0, 10)
 	for {
@@ -469,3 +468,4 @@ func ReadFaster(f *os.File, transposed bool) (*Cef, error) {
 	return cef, nil
 }
 
+*/
