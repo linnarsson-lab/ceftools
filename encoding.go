@@ -2,6 +2,7 @@ package ceftools
 
 import (
 	"encoding/csv"
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -322,3 +323,149 @@ func Read(f *os.File, transposed bool) (*Cef, error) {
 	}
 	return cef, nil
 }
+
+
+func nextString(f *bufio.Reader) string {
+	result := make([]rune, 0, 10)
+	for {
+		r,_,err := f.ReadRune()
+		if err != nil {
+			panic(err.Error())
+		}
+		if r == '\t' {
+			return result
+		}
+		if r == '\r' || r == '\n' {
+			// Consume any number of endline runes
+			for {
+				r,_,err := f.ReadRune()
+				if err != nil {
+					panic(err.Error())
+				}
+				if r != '\r' && r != '\n' {
+					f.UnreadRune()
+				}
+			}
+			return result
+		}
+		result = append(result, r)
+	}
+}
+
+func ReadFaster(f *os.File, transposed bool) (*Cef, error) {
+	var r = bufio.NewReader(f)
+	cef := new(Cef)
+
+	if nextString(r) != "CEF" {
+		return nil, errors.New("Unknown file format")
+	}
+
+	// Parse the header line (the first field, 'CEF' has already been consumed)
+	nHeaders, err := strconv.Atoi(row[1])
+	if err != nil {
+		return nil, errors.New("Header count (row 1, column 2) is not a valid integer")
+	}
+	nRowAttrs, err := strconv.Atoi(row[2])
+	if err != nil {
+		return nil, errors.New("Row attribute count (row 1, column 6) is not a valid integer")
+	}
+	nColumnAttrs, err := strconv.Atoi(row[3])
+	if err != nil {
+		return nil, errors.New("Column attribute count (row 1, column 5) is not a valid integer")
+	}
+	nRows, err := strconv.Atoi(row[4])
+	if err != nil {
+		return nil, errors.New("Row count (row 1, column 4) is not a valid integer")
+	}
+	nColumns, err := strconv.Atoi(row[5])
+	if err != nil {
+		return nil, errors.New("Column count (row 1, column 3) is not a valid integer")
+	}
+	flags, err := strconv.Atoi(row[6])
+	if err != nil {
+		return nil, errors.New("Flags value (row 1, column 7) is not a valid integer")
+	}
+	cef.NumRows = nRows
+	cef.NumColumns = nColumns
+	cef.Flags = flags
+
+	// Read the headers
+	cef.Headers = make([]Header, nHeaders)
+	for i := 0; i < len(cef.Headers); i++ {
+		row, err := r.Read()
+		if err != nil {
+			return nil, err
+		}
+		if len(row) < 2 || row[0] == "" || row[1] == "" {
+			return nil, errors.New(fmt.Sprintf("Invalid header in row %v: name and/or value missing", i+2))
+		}
+		cef.Headers[i].Name = row[0]
+		cef.Headers[i].Value = row[1]
+	}
+	// Read the column attributes
+	cef.ColumnAttributes = make([]Attribute, nColumnAttrs)
+	for i := 0; i < nColumnAttrs; i++ {
+		row, err := r.Read()
+		if err != nil {
+			return nil, err
+		}
+		if len(row) != nRowAttrs+int(cef.NumColumns)+1 {
+			return nil, errors.New(fmt.Sprintf("Invalid column attribute in row %v: wrong number of values", len(cef.Headers)+2+i))
+		}
+		cef.ColumnAttributes[i] = Attribute{row[nRowAttrs], row[nRowAttrs+1:]}
+	}
+
+	// Read the row attribute names and create row attributes
+	cef.RowAttributes = make([]Attribute, nRowAttrs)
+	row, err = r.Read()
+	if err != nil {
+		return nil, err
+	}
+	if len(row) < nRowAttrs {
+		return nil, errors.New(fmt.Sprintf("Number of row attribute names (%v) is less than number indicated in header (%v)", len(row), nRowAttrs))
+	}
+	for i := 0; i < nRowAttrs; i++ {
+		if row[i] == "" {
+			return nil, errors.New(fmt.Sprintf("Row attribute name cannot be empty (name missing in column %v)", i+1))
+		}
+		cef.RowAttributes[i] = Attribute{row[i], make([]string, cef.NumRows)}
+	}
+
+	// Read the rows, with row attribute values
+	cef.Matrix = make([]float32, cef.NumColumns*cef.NumRows)
+	for i := 0; i < cef.NumRows; i++ {
+		row, err := r.Read()
+		if err != nil {
+			return nil, err
+		}
+		if len(row) != nRowAttrs+int(cef.NumColumns)+1 {
+			return nil, errors.New(fmt.Sprintf("Row number %v is not the right length (number of columns is wrong)", len(cef.Headers)+3+nColumnAttrs+i))
+		}
+		for j := 0; j < nRowAttrs; j++ {
+			cef.RowAttributes[j].Values[i] = row[j]
+		}
+		for j := 0; j < int(cef.NumColumns); j++ {
+			val, err := strconv.ParseFloat(row[j+nRowAttrs+1], 32)
+			if err != nil {
+				return nil, errors.New(fmt.Sprintf("Invalid float32 value in column %v, row %v of the main matrix: %v", j+1, i+1, row[j+nRowAttrs]))
+			}
+			if transposed {
+				cef.Matrix[j*cef.NumRows+i] = float32(val)
+			} else {
+				cef.Matrix[j+i*cef.NumColumns] = float32(val)
+			}
+		}
+	}
+
+	// Exchange the rows and columns
+	if transposed {
+		temp1 := cef.NumRows
+		cef.NumRows = cef.NumColumns
+		cef.NumColumns = temp1
+		temp2 := cef.RowAttributes
+		cef.RowAttributes = cef.ColumnAttributes
+		cef.ColumnAttributes = temp2
+	}
+	return cef, nil
+}
+

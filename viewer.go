@@ -47,83 +47,69 @@ loop:
 			if evt.Key == termbox.KeyCtrlC || evt.Ch == 'q' || evt.Ch == 'Q' {
 				break loop
 			}
-			if evt.Key == termbox.KeyArrowLeft {
+			switch evt.Key {
+			case termbox.KeyArrowLeft:
 				left--
 				if left <= 0 {
 					left = 0
 				}
-			}
-			if evt.Key == termbox.KeyArrowRight {
+			case termbox.KeyArrowRight:
 				left++
-			}
-			if evt.Key == termbox.KeyArrowDown {
+			case termbox.KeyArrowDown:
 				top++
-			}
-			if evt.Key == termbox.KeyArrowUp {
+			case termbox.KeyArrowUp:
 				top--
 				if top <= 0 {
 					top = 0
 				}
 			}
-			if evt.Ch == 'j' {
+			switch evt.Ch {
+			case 'A':
 				offsetX -= width / CELLWIDTH
 				if offsetX < 0 {
 					offsetX = 0
 				}
-			}
-			if evt.Ch == 'l' {
+			case 'D':
 				offsetX += width / CELLWIDTH
-			}
-			if evt.Ch == 'k' {
+			case 'S':
 				offsetY += height
-			}
-			if evt.Ch == 'i' {
+			case 'W':
 				offsetY -= height
 				if offsetY < 0 {
 					offsetY = 0
 				}
-			}
-			if evt.Ch == 'w' {
+			case 'w':
 				offsetY--
 				if offsetY < 0 {
 					offsetY = 0
 				}
-			}
-			if evt.Ch == 's' {
+			case 's':
 				offsetY++
-			}
-			if evt.Ch == 'a' {
+			case 'a':
 				offsetX--
 				if offsetX < 0 {
 					offsetX = 0
 				}
-			}
-			if evt.Ch == 'd' {
+			case 'd':
 				offsetX++
-			}
-			if evt.Ch == 'h' {
+			case 'h':
 				offsetX = 0
 				offsetY = 0
 				top = 0
 				left = 0
-			}
-			if evt.Ch == 'z' {
+			case 'z':
 				offsetX = cef.NumColumns - width/CELLWIDTH + len(cef.RowAttributes) + 1 - left
 				offsetY = cef.NumRows - height + len(cef.ColumnAttributes) + 3 - top
-			}
-			if evt.Ch == '+' {
+			case '+':
 				CELLWIDTH++
-			}
-			if evt.Ch == '-' {
+			case '-':
 				CELLWIDTH--
 				if CELLWIDTH < 4 {
 					CELLWIDTH = 4
 				}
-			}
-			if evt.Ch == '0' {
+			case '0':
 				CELLWIDTH = 12
-			}
-			if evt.Ch == 'o' {
+			case 'o':
 				// Sort
 				sort_by := ""
 				if left == len(cef.RowAttributes) {
@@ -142,8 +128,7 @@ loop:
 					}
 				}
 				sortreverse = !sortreverse
-			}
-			if evt.Ch == 't' {
+			case 't':
 				// Transpose
 				result := new(Cef)
 				result.RowAttributes = cef.ColumnAttributes
@@ -248,7 +233,7 @@ func drawCell(text string, x, y int, fg, bg termbox.Attribute) {
 
 func drawToolbar(y int, fg, bg termbox.Attribute) {
 	x := 0
-	for _, text := range []string{"[q] Quit ", "[wasd] Shift ", "[ijkl] Shift more ", "[←↑→↓] Pan ", "[+-0] Zoom ", "[h] Home ", "[z] End ", "[o] Sort leftmost ", "[t] Transpose "} {
+	for _, text := range []string{"[q] Quit ", "[wasd] Pan ", "[WASD] Pan quickly ", "[←↑→↓] Pan all ", "[+-0] Zoom ", "[h] Home ", "[z] End ", "[o] Sort ", "[t] Transpose "} {
 		x += drawToolbarItem(text, y, x, termbox.ColorBlack|termbox.AttrBold, termbox.ColorYellow) + 1
 	}
 }

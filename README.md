@@ -2,9 +2,7 @@
 
 Tools for manipulating cell expression format (CEF) files.
 
-**Note: ceftools is not yet ready for use, nor do I know when it will be**
-
-You can download pre-release alpha versions on the [Releases page](https://github.com/linnarsson-lab/ceftools/releases).
+You can download the latest version from the [releases page](https://github.com/linnarsson-lab/ceftools/releases).
 
 ## Overview
 
@@ -21,21 +19,19 @@ text files that can be easily parsed and generated from any scripting language.
 
 ## Synopsis
 
-Commands that have been implemented so far 
-
 	cef help			- print help for the cef command
 	cef info            - overview of file contents
+	cef view			- interactively navigate the matrix
+	cef transpose 		- transpose the file
+	cef sort			- sort by row attribute or by specific column
 	cef add 			- add attribute or header with constant value 
 	cef rename			- rename attribute
 	cef drop 			- drop attribute(s) or header(s)
 	cef import			- import from STRT
 	cef rescale			- rescale rows (rpkm, tpm or log-transformed)
 	cef join		  	- join two datasets by given attributes
-	cef sort			- sort by row attribute or by specific column
-	cef transpose 		- transpose the file
 	cef select			- select rows that match given criteria
 	cef aggregate		- calculate aggregate statistics for every row
-	cef view			- interactively navigate the matrix
 
 
 Commands operate on rows by default. For example `drop` can be used to remove row attributes, but not column attributes. Use the global `--bycol` flag to operate instead on columns. For example, to remove column attribute `Gene` then sort on column attribute `Length`:
@@ -46,8 +42,121 @@ Commands operate on rows by default. For example `drop` can be used to remove ro
 
 Note that since `--bycol` is a global flag it must always be positioned before the command: `cef --bycol <command>`
 
+## Commands
 
-### CEF file format
+The examples below make use of the `oligos.cef` sample dataset, which you can download from the [releases](https://github.com/linnarsson-lab/ceftools/releases) page. If you have installed `cef` and have `oligos.cef` in your current working directory, you should be able to run all the examples below without modification.
+
+
+### Info
+
+Show a summary of the contents of a CEF file.
+
+Synopsis:
+
+	cef info
+
+Example:
+
+	< oligos.cef cef info 
+
+Output:
+
+	          Columns: 820
+	             Rows: 19972
+	            Flags: 0
+	          Headers:
+	                   Genome = mm10
+	                   Citation = http://www.sciencemag.org/content/347/6226/1138.abstract
+
+	Column attributes: Tissue, Group, Total_mRNA, Well, Sex, Age, Diameter, CellID, Class, Subclass
+	   Row attributes: GeneType, Gene, GeneGroup
+
+
+### View
+
+Interactively view the contents of a CEF file (in the terminal window).
+
+Synopsis:
+
+	cef view
+
+Example: 
+	
+	< oligos.cef cef view
+
+Ouput:
+
+![Viewer screen](viewer-oligos.png)
+
+The yellow toolbar at the bottom shows the available commands for navigating the file.
+
+Use the 'wasd' keys to scroll the matrix; hold down shift to scroll by a whole screen at a time. Press 'h' to jump to the top-left corner, and 'z' to jump to the bottom-right. 
+
+Use the arrow keys to scroll the entire view (including the row and column attributes).
+
+To sort by an attribute or column, use the arrow keys to scroll the view. Position the column you want to sort by at the left of you screen, then press 'o'. To reverse the sort order, press 'o' again.
+
+To transpose rows and columns, press 't'.
+
+Press 'q' to exit the viewer.
+
+
+### Transpose
+
+Transpose rows and columns.
+
+Synopsis:
+
+	cef transpose
+
+Example:
+
+	< oligos.cef cef transpose | cef info
+
+Output:
+
+	          Columns: 19972
+	             Rows: 820
+	            Flags: 0
+	          Headers:
+	                   Genome = mm10
+	                   Citation = http://www.sciencemag.org/content/347/6226/1138.abstract
+
+	Column attributes: GeneType, Gene, GeneGroup
+	   Row attributes: Tissue, Group, Total_mRNA, Well, Sex, Age, Diameter, CellID, Class, Subclass
+
+Compare this output to the example given above (*View* command).
+
+
+### Sort
+
+Sort the file based on a row attribute or the values in a specific column.
+
+Synopsis:
+
+	cef sort --by *attr=X*		Sort by the column where column attribute 'attr' has value 'X'
+	cef sort --by *attr*		Sort by the row attribute 'attr'
+
+	Options:
+
+		--numerical				When sorting by row attribute, sort numerically (default: sort alphabetically)
+		--reverse				Sort in reverse order
+
+Example:
+
+	< oligos.cef cef sort --by "CellID=1772067057_G07 --reverse > oligos_sorted.cef"
+
+Output:
+
+The output file is sorted by the first column, which has CellID '1772067057_G07', in descending order. You can verify this by doing `< oligos_sorted.cef cef view`.
+
+
+### More commands
+
+...work in progress...
+
+
+## CEF file format
 
 CEF files are tab-delimited text files in [UTF-8](http://en.wikipedia.org/wiki/UTF-8) encoding, no [BOM](http://en.wikipedia.org/wiki/Byte_order_mark). The first four characters are 'CEF\t' (that's a single tab character at the end), equivalent to the hexadecimal 4-byte number 0x09464543. CEF files are guaranteed to always begin with these four bytes, which can be used to identify the file format in the absence of a file name extension.
 
@@ -77,7 +186,7 @@ Example of a file with 1 header, 4 Row Attributes, 2 Column Attributes, 345 Rows
 Note that a CEF file can have zero row attributes, zero column attributes, and even zero rows or columns (in any combination). A CEF file without data, but with only row attributes, can be a useful way of storing annotations. Such a file can be joined to a data file to add the annotation to the data file.
 
 
-### To-do list
+## To-do list
 
 	Tutorials for common tasks
 	Rescale by given column attribute (mean centered)
