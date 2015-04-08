@@ -419,7 +419,7 @@ func CmdRescale(method string, length_attr string, bycol bool) error {
 		}
 		if sum != 0 {
 			for i := 0; i < len(vals); i++ {
-				vals[i] = vals[i] * 1000000 / sum / length
+				vals[i] = vals[i] * 1000 / sum / length
 			}
 		}
 	}

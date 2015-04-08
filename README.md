@@ -24,14 +24,14 @@ text files that can be easily parsed and generated from any scripting language.
 	cef view			- interactively navigate the matrix
 	cef transpose 		- transpose the file
 	cef sort			- sort by row attribute or by specific column
-	cef add 			- add attribute or header with constant value 
-	cef rename			- rename attribute
-	cef drop 			- drop attribute(s) or header(s)
-	cef import			- import from STRT
-	cef rescale			- rescale rows (rpkm, tpm or log-transformed)
-	cef join		  	- join two datasets by given attributes
 	cef select			- select rows that match given criteria
+	cef join		  	- join two datasets by given attributes
+	cef add 			- add attribute or header with constant value 
+	cef drop 			- drop attribute(s) or header(s)
+	cef rename			- rename attribute
+	cef rescale			- rescale rows (rpkm, tpm or log-transformed)
 	cef aggregate		- calculate aggregate statistics for every row
+	cef import			- import from STRT
 
 
 Commands operate on rows by default. For example `drop` can be used to remove row attributes, but not column attributes. Use the global `--bycol` flag to operate instead on columns. For example, to remove column attribute `Gene` then sort on column attribute `Length`:
@@ -45,6 +45,10 @@ Note that since `--bycol` is a global flag it must always be positioned before t
 ## Commands
 
 The examples below make use of the `oligos.cef` sample dataset, which you can download from the [releases](https://github.com/linnarsson-lab/ceftools/releases) page. If you have installed `cef` and have `oligos.cef` in your current working directory, you should be able to run all the examples below without modification.
+
+The commands below are described as operating on rows, which is the default. All commands can be made to operate on columns instead, by preceding the command with the `--bycol` options. For example:
+
+	cef --bycol select --where "Subclass=Oligo1"
 
 
 ### Info
@@ -125,7 +129,7 @@ Output:
 	Column attributes: GeneType, Gene, GeneGroup
 	   Row attributes: Tissue, Group, Total_mRNA, Well, Sex, Age, Diameter, CellID, Class, Subclass
 
-Compare this output to the example given above (*View* command).
+Compare this output to the example given above (*Info* command).
 
 
 ### Sort
@@ -134,8 +138,8 @@ Sort the file based on a row attribute or the values in a specific column.
 
 Synopsis:
 
-	cef sort --by *attr=X*		Sort by the column where column attribute 'attr' has value 'X'
-	cef sort --by *attr*		Sort by the row attribute 'attr'
+	cef sort --by "attr=X"		Sort by the column where column attribute 'attr' has value 'X'
+	cef sort --by "attr"		Sort by the row attribute 'attr'
 
 	Options:
 
@@ -150,10 +154,183 @@ Output:
 
 The output file is sorted by the first column, which has CellID '1772067057_G07', in descending order. You can verify this by doing `< oligos_sorted.cef cef view`.
 
+**Note:** when sorting by column, the "attr=X" clause must be put in double quotes (as above), or bash will interpret the equals sign as a variable assignment.
 
-### More commands
 
-...work in progress...
+### Select
+
+Select rows that match a given criterion.
+
+Synopsis:
+
+	cef select --where "attr=X"		Select rows where the given attribute has value 'X'
+	cef select --range "10:20"		Select rows 10 through 20
+	cef select --range ":20"		Select all rows up to and including row 20
+	cef select --range "100:"		Select all rows starting with row 100 and to the last row
+
+	Options:
+
+		--except					Invert the selection
+
+Example:
+
+	< oligos.cef cef select --where "Gene=Actb" | cef view
+
+Output:
+
+The result is a file with a single row, containing the data for *Actb*.
+
+
+### Join
+
+Join two datasets by matching up rows that have the same value for an attribute.
+
+Synopsis:
+
+	cef join --with <other.cef> --on "attr1=attr2"		Join STDIN with other.cef, matching attr1 of STDIN with attr2 of other.cef
+
+This command joins two CEF files, one from standard input (STDIN) and one given by the `--with <other.cef>` option. The result is a new CEF file which has been extended on the right with all the data from 'other.cef' that matches with the existing data in the input CEF file. 
+
+Rows that do not match are silently dropped. 
+
+Column attributes of the same name are merged. For example, of both of the input files have column attribute `Age`, the resulting file will have a single column attribute `Age`. But if one file has `Sex` and the other has `Gender`, the output will have two attributes (`Sex` and `Gender`), and missing values will be blank.
+
+Row attributes are merged if they contain identical values for all the retained rows. For example, if both input files have row attributes `Gene` and all retained rows have the same values in the same order, then the output will have only a single row attribute `Gene`. But if there are any differences, then the result will be twp row attributes both called `Gene`.
+
+
+### Add
+
+Add a header or a constant attribute.
+
+Synopsis:
+
+	cef add --attr "attr=X"		Add a row attribute 'attr' with constant value 'X' in every row
+	cef add --header "hdr=X"	Add a new header 'hdr' with value 'X'
+
+Example:
+
+	< oligos.cef cef --bycol add "File=oligos.cef" | cef view
+
+Output:
+
+The resulting file will have a new column attribute (since we specified `--bycol`; note that this option goes *before* the command), with the same value for every column.
+
+This can be useful when joining two datasets, to keep track of which columns came from which file originally.
+
+
+### Drop
+
+Remove an attribute or header.
+
+Synopsis:
+
+	cef drop --attrs "att1,att2"	Remove attributes 'att1' and 'att2' (comma-separated, case sensitive list)
+	cef drop --headers "hdr1,hdr2"	Remove headers 'hdr1' and 'hdr2' (comma-separated, case sensitive list)
+
+Example:
+
+	< oligos.cef cef drop --headers "Genome,Citation"
+
+Output:
+
+	          Columns: 820
+	             Rows: 19972
+	            Flags: 0
+	          Headers:
+
+	Column attributes: Tissue, Group, Total_mRNA, Well, Sex, Age, Diameter, CellID, Class, Subclass
+	   Row attributes: GeneType, Gene, GeneGroup
+
+The two headers were dropped.
+
+
+### Rename
+
+Rename an attribute.
+
+Synopsis:
+
+	cef rename --attr "old=new"		Rename the attribute 'old' to 'new'
+
+Example:
+
+	< oligos.cef cef rename --attr "Gene=Symbol" | cef info
+
+Output:
+
+	          Columns: 820
+	             Rows: 19972
+	            Flags: 0
+	          Headers:
+	                   Genome = mm10
+	                   Citation = http://www.sciencemag.org/content/347/6226/1138.abstract
+
+	Column attributes: Tissue, Group, Total_mRNA, Well, Sex, Age, Diameter, CellID, Class, Subclass
+	   Row attributes: GeneType, Symbol, GeneGroup
+
+Notice the renamed row attribute.
+
+
+### Rescale
+
+Scale or normalize the main matrix using one of several common methods.
+
+Synopsis:
+
+	cef rescale --method [log|tmp|rpkm]		Rescale using the given method
+
+	Options:
+
+		--length <attr>		Gives the name of the row attribute that gives the gene length (for rpkm)
+
+Example:
+
+	< oligos.cef cef rescale --method log | cef view
+
+Output:
+
+Notice that the values have been rescaled from X to log(X+1).
+
+The 'tpm' option normalizes each row by dividing by the row sum and multiplying by 1000000.
+
+The 'rpkm' option normalizes each row by dividing by the row sum and by the *length*, and multiplying by 1000. The *length* must be given as a row attribute as indicated using the `--length` option. The length is normally given in basepairs.
+
+
+### Aggregate
+
+Compute aggregated values for each row.
+
+Synopsis:
+
+	cef aggregate [options]
+
+	Options:
+
+		--mean		Compute mean
+		--stdev		Compute standard deviation
+		--cv 		Compute CV (standard deviation divided by the mean)
+		--max 		Compute max value
+		--min 		Compute minimum value
+
+Example:
+
+	< oligos.cef cef aggregate --mean --stdev | cef view
+
+Output:
+
+Two new row attributes are added, named "Mean" and "Stdev". This makes it possible to sort by mean and standard deviation in the veiwer.
+
+
+### Import
+
+Import from other file formats to CEF.
+
+Synopsis:
+
+	cef import --format "format"	Import a file expected to be in 'format'
+
+Currently, this command allows a single format "strt", which can be used to import a Linnarsson lab legacy file format ("_expression.tab").
+
 
 
 ## CEF file format
