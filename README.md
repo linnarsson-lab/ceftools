@@ -314,7 +314,7 @@ Example:
 
 Output:
 
-Two new row attributes are added, named "Mean" and "Stdev". This makes it possible to sort by mean and standard deviation in the veiwer.
+Two new row attributes are added, named "Mean" and "Stdev". This makes it possible to sort by mean and standard deviation in the viewer.
 
 
 ### Import
@@ -369,6 +369,9 @@ Note that a CEF file can have zero row attributes, zero column attributes, and e
 	Support old-style Mac line endings
 	Aggregate noise, maxcor, mincorr
 	Left, right joins
+	Select by regex
+	Select by < and >
+	Import simple tables
 	Parsers and generators for R, Python, MATLAB, Mathematica, Java, 
 	Test suite for parsers and generators
 	Validator for CEF files

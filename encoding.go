@@ -147,7 +147,7 @@ func ReadStrt(f *os.File, transposed bool) (*Cef, error) {
 		if attr.Name[len(attr.Name)-1] == ':' {
 			attr.Name = attr.Name[:len(attr.Name)-1]
 		}
-		for i := nRowAttrs - 1; i < cef.NumColumns; i++ {
+		for i := nRowAttrs - 1; i < cef.NumColumns+nRowAttrs-1; i++ {
 			attr.Values[i-nRowAttrs+1] = row[i]
 		}
 		cef.ColumnAttributes = append(cef.ColumnAttributes, attr)
