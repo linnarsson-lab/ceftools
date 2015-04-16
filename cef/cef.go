@@ -203,7 +203,7 @@ func main() {
 
 	// Show info
 	case info.FullCommand():
-		var cef, err = ceftools.Read(os.Stdin, *app_bycol)
+		var cef, err = ceftools.ReadFaster(os.Stdin, *app_bycol)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			return
