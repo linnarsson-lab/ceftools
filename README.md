@@ -408,12 +408,10 @@ Note that a CEF file can have zero row attributes, zero column attributes, and e
 	Rescale by given column attribute (mean centered)
 	Import simple tables
 	Aggregate maxcor, mincorr
-	SPIN
 	Left, right joins
 	Select by regex
 	Select by < and >
 	Parsers and generators for R, Python, MATLAB, Mathematica, Java, 
 	Test suite for parsers and generators
 	Validator for CEF files
-	Fetch dataset from GEO SOFT
 	Repository
