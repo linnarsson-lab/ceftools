@@ -41,7 +41,7 @@ The examples below make use of the `oligos.cef` sample dataset, which you can do
 Commands operate on rows by default. For example `drop` can be used to remove row attributes, but not column attributes. Use the global `--bycol` flag to operate instead on columns. For example, to remove column attribute `Gene` then sort on column attribute `Length`:
 
 ```
-< infile.cef cef --bycol drop Gene | cef --bycol sort Length > outfile.cef 
+< infile.cef cef --bycol drop --attrs Gene | cef --bycol sort Length > outfile.cef 
 ```
 
 Note that since `--bycol` is a global flag it must always be positioned before the command: `cef --bycol <command>`
@@ -302,11 +302,12 @@ Synopsis:
 
 	Options:
 
-		--mean		Compute mean
-		--stdev		Compute standard deviation
-		--cv 		Compute CV (standard deviation divided by the mean)
-		--max 		Compute max value
-		--min 		Compute minimum value
+		--mean				Compute mean
+		--stdev				Compute standard deviation
+		--cv 				Compute CV (standard deviation divided by the mean)
+		--max 				Compute max value
+		--min 				Compute minimum value
+		--noise <method>	Compute noise as offset from CV-vs-mean fit
 
 Example:
 
@@ -315,6 +316,23 @@ Example:
 Output:
 
 Two new row attributes are added, named "Mean" and "Stdev". This makes it possible to sort by mean and standard deviation in the viewer.
+
+#### Calculating noise
+
+To calculate noise using the standard CV-vs-mean fit, you must pass a *method* parameter:
+
+`cef aggregate --noise std`
+
+The following values are supported:
+
+|Method | Algorithm|
+|-------|----------|
+|std    | Fit *log(CV) = log(mean<sup>k<sub>0</sub></sup> + k<sub>1</sub>)* using least absolute deviation |
+|bands  | Fit *log(CV) = log(mean<sup>0.52</sup> + k<sub>1</sub>)* by bisection |
+
+The most reliable and well-tested method is `std`, but `bands` can sometimes give a better fit. In both cases, the fitting algorithms 
+have been tested only on data represented as absolute mRNA molecule counts per cell. If you have RPKM or TPM data, the fits may or may not 
+converge and may be completely off (let us know what you find!.
 
 
 ### Import
@@ -363,15 +381,15 @@ Note that a CEF file can have zero row attributes, zero column attributes, and e
 
 ## To-do list
 
+	Speed up CEF writer
 	Tutorials for common tasks
 	Rescale by given column attribute (mean centered)
 	Import simple tables
-	Support old-style Mac line endings
-	Aggregate noise, maxcor, mincorr
+	Aggregate maxcor, mincorr
+	SPIN
 	Left, right joins
 	Select by regex
 	Select by < and >
-	Import simple tables
 	Parsers and generators for R, Python, MATLAB, Mathematica, Java, 
 	Test suite for parsers and generators
 	Validator for CEF files
