@@ -31,8 +31,8 @@ const (
 )
 
 type Cef struct {
-	NumRows          int
-	NumColumns       int
+	Rows             int
+	Columns          int
 	Headers          []Header
 	Flags            int
 	RowAttributes    []Attribute
@@ -40,16 +40,58 @@ type Cef struct {
 	Matrix           []float32
 }
 
-func (cef Cef) Get(col int, row int) float32 {
-	return cef.Matrix[col+row*cef.NumColumns]
+func (cef *Cef) Get(row int, col int) float32 {
+	return cef.Matrix[col+row*cef.Columns]
 }
 
-func (cef Cef) Set(col int, row int, val float32) {
-	cef.Matrix[col+row*cef.NumColumns] = val
+func (cef *Cef) Set(row int, col int, val float32) {
+	cef.Matrix[col+row*cef.Columns] = val
 }
 
-func (cef Cef) GetRow(row int) []float32 {
-	return cef.Matrix[row*cef.NumColumns : (row+1)*cef.NumColumns]
+func (cef *Cef) GetRow(row int) []float32 {
+	return cef.Matrix[row*cef.Columns : (row+1)*cef.Columns]
+}
+
+func (cef *Cef) GetMatrix() *Matrix {
+	temp := new(Matrix)
+	temp.Rows = cef.Rows
+	temp.Columns = cef.Columns
+	temp.Matrix = cef.Matrix
+	return temp
+}
+
+// Support the Permutable2D interface
+func (cef *Cef) SwapRows(i, j int) {
+	// Swap entries in all the row attributes
+	for ix := 0; ix < len(cef.RowAttributes); ix++ {
+		temp := cef.RowAttributes[ix].Values[i]
+		cef.RowAttributes[ix].Values[i] = cef.RowAttributes[ix].Values[j]
+		cef.RowAttributes[ix].Values[j] = temp
+	}
+
+	// Swap rows in the main matrix
+	for ix := 0; ix < cef.Columns; ix++ {
+		temp := cef.Get(i, ix)
+		cef.Set(i, ix, cef.Get(j, ix))
+		cef.Set(j, ix, temp)
+	}
+}
+
+// Support the Permutable2D interface
+func (cef *Cef) SwapColumns(i, j int) {
+	// Swap entries in all the column attributes
+	for ix := 0; ix < len(cef.ColumnAttributes); ix++ {
+		temp := cef.ColumnAttributes[ix].Values[i]
+		cef.ColumnAttributes[ix].Values[i] = cef.ColumnAttributes[ix].Values[j]
+		cef.ColumnAttributes[ix].Values[j] = temp
+	}
+	return
+	// Swap columns in the main matrix
+	for ix := 0; ix < cef.Rows; ix++ {
+		temp := cef.Get(ix, i)
+		cef.Set(ix, i, cef.Get(ix, j))
+		cef.Set(ix, j, temp)
+	}
 }
 
 type stringRec struct {
@@ -84,8 +126,8 @@ func (cef Cef) SortByRowAttribute(attr string, reverse bool) (*Cef, error) {
 
 	// Make the resulting Cef
 	result := new(Cef)
-	result.NumColumns = cef.NumColumns
-	result.NumRows = cef.NumRows
+	result.Columns = cef.Columns
+	result.Rows = cef.Rows
 	result.Headers = cef.Headers
 	result.Flags = cef.Flags
 	result.Matrix = make([]float32, 0)
@@ -96,7 +138,7 @@ func (cef Cef) SortByRowAttribute(attr string, reverse bool) (*Cef, error) {
 		result.RowAttributes[i].Values = make([]string, len(result.RowAttributes[i].Values))
 	}
 	if reverse {
-		for i := cef.NumRows - 1; i >= 0; i-- {
+		for i := cef.Rows - 1; i >= 0; i-- {
 			from := recs[i].index
 			result.Matrix = append(result.Matrix, cef.GetRow(from)...)
 			for j := 0; j < len(cef.RowAttributes); j++ {
@@ -104,7 +146,7 @@ func (cef Cef) SortByRowAttribute(attr string, reverse bool) (*Cef, error) {
 			}
 		}
 	} else {
-		for i := 0; i < cef.NumRows; i++ {
+		for i := 0; i < cef.Rows; i++ {
 			from := recs[i].index
 			result.Matrix = append(result.Matrix, cef.GetRow(from)...)
 			for j := 0; j < len(cef.RowAttributes); j++ {
@@ -126,18 +168,18 @@ func (a indexedNumbers) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a indexedNumbers) Less(i, j int) bool { return a[i].value < a[j].value }
 
 func (cef Cef) SortNumerical(by string, reverse bool) (*Cef, error) {
-	recs := make([]numberRec, cef.NumRows)
+	recs := make([]numberRec, cef.Rows)
 
 	if by[0] == '#' {
 		index, err := strconv.Atoi(by[1:])
 		if err != nil {
 			return nil, err
 		}
-		if index > cef.NumColumns {
+		if index > cef.Columns {
 			return nil, errors.New("Column index out of range when attempting to sort: " + by[1:])
 		}
 		// Make the list of values
-		for i := 0; i < cef.NumRows; i++ {
+		for i := 0; i < cef.Rows; i++ {
 			recs[i] = numberRec{cef.Get(index-1, i), i}
 		}
 	} else {
@@ -157,7 +199,7 @@ func (cef Cef) SortNumerical(by string, reverse bool) (*Cef, error) {
 
 			// Find the column that matches the value
 			col := -1
-			for i := 0; i < cef.NumColumns; i++ {
+			for i := 0; i < cef.Columns; i++ {
 				if cef.ColumnAttributes[colAttr].Values[i] == temp[1] {
 					col = i
 					break
@@ -168,7 +210,7 @@ func (cef Cef) SortNumerical(by string, reverse bool) (*Cef, error) {
 			}
 
 			// Make the list of values
-			for i := 0; i < cef.NumRows; i++ {
+			for i := 0; i < cef.Rows; i++ {
 				recs[i] = numberRec{cef.Get(col, i), i}
 			}
 		} else {
@@ -187,7 +229,7 @@ func (cef Cef) SortNumerical(by string, reverse bool) (*Cef, error) {
 			for i := 0; i < len(index); i++ {
 				value, err := strconv.ParseFloat(index[i], 32)
 				if err != nil {
-					value = 0
+					return nil, err
 				}
 				recs[i] = numberRec{float32(value), i}
 			}
@@ -200,8 +242,8 @@ func (cef Cef) SortNumerical(by string, reverse bool) (*Cef, error) {
 
 	// Make the resulting Cef
 	result := new(Cef)
-	result.NumColumns = cef.NumColumns
-	result.NumRows = cef.NumRows
+	result.Columns = cef.Columns
+	result.Rows = cef.Rows
 	result.Headers = cef.Headers
 	result.Flags = cef.Flags
 	result.Matrix = make([]float32, 0)
@@ -212,7 +254,7 @@ func (cef Cef) SortNumerical(by string, reverse bool) (*Cef, error) {
 		result.RowAttributes[i].Values = make([]string, len(result.RowAttributes[i].Values))
 	}
 	if reverse {
-		for i := cef.NumRows - 1; i >= 0; i-- {
+		for i := cef.Rows - 1; i >= 0; i-- {
 			from := recs[i].index
 			result.Matrix = append(result.Matrix, cef.GetRow(from)...)
 			for j := 0; j < len(cef.RowAttributes); j++ {
@@ -220,7 +262,7 @@ func (cef Cef) SortNumerical(by string, reverse bool) (*Cef, error) {
 			}
 		}
 	} else {
-		for i := 0; i < cef.NumRows; i++ {
+		for i := 0; i < cef.Rows; i++ {
 			from := recs[i].index
 			result.Matrix = append(result.Matrix, cef.GetRow(from)...)
 			for j := 0; j < len(cef.RowAttributes); j++ {
@@ -235,7 +277,7 @@ func (cef Cef) SortNumerical(by string, reverse bool) (*Cef, error) {
 // lining up rows that have the same value for the given attributes.
 // The 'mode' parameter determines the type of join performed: left join (mode "left"),
 // right join (mode "right") or inner join (mode "inner")
-func (left Cef) Join(right *Cef, leftAttr string, rightAttr string) (*Cef, error) {
+func (left *Cef) Join(right *Cef, leftAttr string, rightAttr string) (*Cef, error) {
 	// Find the indexes
 	var leftIndex []string
 	for i := 0; i < len(left.RowAttributes); i++ {
@@ -264,7 +306,7 @@ func (left Cef) Join(right *Cef, leftAttr string, rightAttr string) (*Cef, error
 
 	// Prepare the result
 	result := new(Cef)
-	result.NumColumns = left.NumColumns + right.NumColumns
+	result.Columns = left.Columns + right.Columns
 	result.Headers = left.Headers
 	result.Flags = left.Flags
 	result.Matrix = make([]float32, 0)
@@ -292,20 +334,20 @@ func (left Cef) Join(right *Cef, leftAttr string, rightAttr string) (*Cef, error
 	// Join the column attributes
 	for j := 0; j < len(left.ColumnAttributes); j++ {
 		result.ColumnAttributes[j].Values = append(result.ColumnAttributes[j].Values, left.ColumnAttributes[j].Values...)
-		result.ColumnAttributes[j].Values = append(result.ColumnAttributes[j].Values, make([]string, right.NumColumns)...)
+		result.ColumnAttributes[j].Values = append(result.ColumnAttributes[j].Values, make([]string, right.Columns)...)
 	}
 	for j := 0; j < len(right.ColumnAttributes); j++ {
-		result.ColumnAttributes[j+len(left.ColumnAttributes)].Values = append(result.ColumnAttributes[j+len(left.ColumnAttributes)].Values, make([]string, left.NumColumns)...)
+		result.ColumnAttributes[j+len(left.ColumnAttributes)].Values = append(result.ColumnAttributes[j+len(left.ColumnAttributes)].Values, make([]string, left.Columns)...)
 		result.ColumnAttributes[j+len(left.ColumnAttributes)].Values = append(result.ColumnAttributes[j+len(left.ColumnAttributes)].Values, right.ColumnAttributes[j].Values...)
 	}
 
 	// For each row of the right table, look it up in the hash
-	numRows := 0
+	Rows := 0
 	for i := 0; i < len(rightIndex); i++ {
 		ix := leftKeys[rightIndex[i]]
 		if ix != 0 {
 			// We have a match; append one row to the result
-			numRows++
+			Rows++
 			leftKeys[rightIndex[i]] = 0 // Delete the key to prevent future matches (skip if doing right join?)
 			result.Matrix = append(result.Matrix, left.GetRow(ix-1)...)
 			result.Matrix = append(result.Matrix, right.GetRow(i)...)
@@ -321,7 +363,7 @@ func (left Cef) Join(right *Cef, leftAttr string, rightAttr string) (*Cef, error
 			fmt.Fprintf(os.Stderr, "Dropped %v", rightIndex[i])
 		}
 	}
-	result.NumRows = numRows
+	result.Rows = Rows
 
 	// Merge duplicate column attributes
 	temp := make([]Attribute, 0)

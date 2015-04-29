@@ -98,8 +98,8 @@ loop:
 				top = 0
 				left = 0
 			case 'z':
-				offsetX = cef.NumColumns - width/CELLWIDTH + len(cef.RowAttributes) + 1 - left
-				offsetY = cef.NumRows - height + len(cef.ColumnAttributes) + 3 - top
+				offsetX = cef.Columns - width/CELLWIDTH + len(cef.RowAttributes) + 1 - left
+				offsetY = cef.Rows - height + len(cef.ColumnAttributes) + 3 - top
 			case '+':
 				CELLWIDTH++
 			case '-':
@@ -122,9 +122,14 @@ loop:
 						cef = result
 					}
 				} else {
-					result, err := cef.SortByRowAttribute(cef.RowAttributes[left].Name, sortreverse)
+					result, err := cef.SortNumerical(cef.RowAttributes[left].Name, sortreverse)
 					if err == nil {
 						cef = result
+					} else {
+						result, err := cef.SortByRowAttribute(cef.RowAttributes[left].Name, sortreverse)
+						if err == nil {
+							cef = result
+						}
 					}
 				}
 				sortreverse = !sortreverse
@@ -134,12 +139,12 @@ loop:
 				result.RowAttributes = cef.ColumnAttributes
 				result.ColumnAttributes = cef.RowAttributes
 				result.Headers = cef.Headers
-				result.NumRows = cef.NumColumns
-				result.NumColumns = cef.NumRows
+				result.Rows = cef.Columns
+				result.Columns = cef.Rows
 				result.Flags = cef.Flags
 				result.Matrix = make([]float32, len(cef.Matrix))
-				for col := 0; col < result.NumColumns; col++ {
-					for row := 0; row < result.NumRows; row++ {
+				for col := 0; col < result.Columns; col++ {
+					for row := 0; row < result.Rows; row++ {
 						result.Set(col, row, cef.Get(row, col))
 					}
 				}
@@ -174,7 +179,7 @@ func redraw(cef *Cef, w, h int) {
 		// Draw the column attribute name
 		drawCell(cef.ColumnAttributes[ix].Name, (len(cef.RowAttributes)-left)*CELLWIDTH, ix-top, termbox.ColorGreen, termbox.ColorBlack)
 		// Draw the column attribute values
-		for j := offsetX; j < cef.NumColumns; j++ {
+		for j := offsetX; j < cef.Columns; j++ {
 			drawCell(cef.ColumnAttributes[ix].Values[j], (len(cef.RowAttributes)-left+j+1-offsetX)*CELLWIDTH, ix-top, termbox.ColorCyan, termbox.ColorBlack)
 			if (len(cef.RowAttributes)-left+j+1-offsetX)*CELLWIDTH > w {
 				break
@@ -188,7 +193,7 @@ func redraw(cef *Cef, w, h int) {
 	}
 
 	// Draw the rows
-	for row := offsetY; row < cef.NumRows; row++ {
+	for row := offsetY; row < cef.Rows; row++ {
 		if row+len(cef.ColumnAttributes)-top+3-offsetY >= h {
 			break
 		}
@@ -197,8 +202,8 @@ func redraw(cef *Cef, w, h int) {
 			drawCell(cef.RowAttributes[ix].Values[row], (ix-left)*CELLWIDTH, row+len(cef.ColumnAttributes)-top+2-offsetY, termbox.ColorCyan, termbox.ColorBlack)
 		}
 		// Draw the row matrix values
-		for col := offsetX; col < cef.NumColumns; col++ {
-			value := float64(cef.Get(col, row))
+		for col := offsetX; col < cef.Columns; col++ {
+			value := float64(cef.Get(row, col))
 			number := strconv.FormatFloat(value, 'f', 1, 32)
 			if value > 10 {
 				number = strconv.FormatFloat(value, 'f', 0, 32)

@@ -1,10 +1,18 @@
 package main
 
+// Building for all platforms
+//
+// GOOS=darwin GOARCH=amd64 go build -o cef-mac-64-bit cef.go
+// GOOS=linux GOARCH=amd64 go build -o cef-linux-64-bit cef.go
+// GOOS=windows GOARCH=amd64 go build -o cef-windows-64-bit cef.go
+//
+
 import (
 	"fmt"
 	"github.com/alecthomas/kingpin"
 	"github.com/linnarsson-lab/ceftools"
 	"os"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 )
@@ -15,6 +23,7 @@ func main() {
 
 	var app = kingpin.New("cef", versionString)
 	var app_bycol = app.Flag("bycol", "Apply command by columns instead of by rows").Short('c').Bool()
+	var app_profile = app.Flag("profile", "Run with CPU profiling, output to the given file").String()
 
 	var info = app.Command("info", "Show a summary of the file contents")
 	var test = app.Command("test", "Perform an internal test")
@@ -48,9 +57,11 @@ func main() {
 	var join_on = join.Flag("on", "The attributes on which to join, of form 'attr1=attr2'").Required().String()
 
 	var sort = app.Command("sort", "Sort by row attribute or by specific column")
-	var sort_by = sort.Flag("by", "The attribute or column ('column=value') to sort by").Required().String()
+	var sort_by = sort.Flag("by", "The attribute or column ('column=value') to sort by").String()
 	var sort_reverse = sort.Flag("reverse", "Sort in reverse order").Short('r').Bool()
 	var sort_numerical = sort.Flag("numerical", "Numerical sort (default: alphabetical)").Short('n').Bool()
+	var sort_spin = sort.Flag("spin", "Sort by SPIN").Bool()
+	var sort_corrfile = sort.Flag("corrfile", "Optional filename where to write the sorted correlation matrix").String()
 
 	var aggregate = app.Command("aggregate", "Calculate aggregate statistics per row")
 	var aggregate_cv = aggregate.Flag("cv", "Calculate coefficient of variation (CV)").Bool()
@@ -58,6 +69,7 @@ func main() {
 	var aggregate_stdev = aggregate.Flag("stdev", "Calculate standard deviation").Bool()
 	var aggregate_max = aggregate.Flag("max", "Calculate max value").Bool()
 	var aggregate_min = aggregate.Flag("min", "Calculate min value").Bool()
+	var aggregate_noise = aggregate.Flag("noise", "Calculate noise (CV-vs-mean offset)").Required().Enum("std", "bands")
 
 	var view = app.Command("view", "View the file content interactively")
 
@@ -68,6 +80,16 @@ func main() {
 		return
 	}
 
+	if *app_profile != "" {
+		f, err := os.Create(*app_profile)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+
+	}
+
 	// Handle the sub-commands
 	switch kingpin.MustParse(parsed, nil) {
 	case view.FullCommand():
@@ -76,7 +98,7 @@ func main() {
 		}
 		return
 	case aggregate.FullCommand():
-		if err = ceftools.CmdAggregate(*aggregate_mean, *aggregate_cv, *aggregate_stdev, *aggregate_max, *aggregate_min, *app_bycol); err != nil {
+		if err = ceftools.CmdAggregate(*aggregate_mean, *aggregate_cv, *aggregate_stdev, *aggregate_max, *aggregate_min, *aggregate_noise, *app_bycol); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
 		return
@@ -91,8 +113,14 @@ func main() {
 		}
 		return
 	case sort.FullCommand():
-		if err = ceftools.CmdSort(*sort_by, *sort_numerical, *sort_reverse, *app_bycol); err != nil {
-			fmt.Fprintln(os.Stderr, err)
+		if *sort_spin {
+			if err = ceftools.CmdSPIN(*sort_corrfile, *app_bycol); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
+		} else {
+			if err = ceftools.CmdSort(*sort_by, *sort_numerical, *sort_reverse, *app_bycol); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
 		}
 		return
 	case join.FullCommand():
@@ -173,8 +201,8 @@ func main() {
 	// Perform test
 	case test.FullCommand():
 		var cef = new(ceftools.Cef)
-		cef.NumColumns = 5
-		cef.NumRows = 10
+		cef.Columns = 5
+		cef.Rows = 10
 		cef.Headers = make([]ceftools.Header, 2)
 		cef.Headers[0].Name = "Tissue"
 		cef.Headers[0].Value = "Amygdala"
@@ -189,13 +217,21 @@ func main() {
 		cef.RowAttributes[0].Name = "Gene"
 		cef.RowAttributes[0].Values = []string{"Actb", "Gapdh", "Synpr", "Pou3f2", "Bdnf", "Ngf", "Sox11", "Olig1", "Olig2", "Foxj1"}
 		cef.RowAttributes[1].Name = "Chromosome"
-		cef.RowAttributes[1].Values = []string{"Chr1", "Chr2", "Chr3", "Chr4", "Chr5", "Chr1", "Chr2", "Chr3", "Chr4", "Chr5"}
+		cef.RowAttributes[1].Values = []string{"Chr0", "Chr1", "Chr2", "Chr3", "Chr4", "Chr5", "Chr6", "Chr7", "Chr8", "Chr9"}
 		cef.RowAttributes[2].Name = "Length"
 		cef.RowAttributes[2].Values = []string{"1200", "1300", "1400", "1700", "1920", "130", "800", "7800", "1100", "200"}
 		cef.Matrix = make([]float32, 10*5)
-		cef.Set(0, 0, 1)
-		cef.Set(0, 1, 2)
-		cef.Set(0, 2, 3)
+		cef.Set(0, 0, 0)
+		cef.Set(1, 0, 1)
+		cef.Set(2, 0, 2)
+		cef.Set(3, 0, 3)
+		cef.Set(4, 0, 4)
+		cef.Set(5, 0, 5)
+		cef.Set(6, 0, 6)
+		cef.Set(7, 0, 7)
+		cef.Set(8, 0, 8)
+		cef.Set(9, 0, 9)
+		ceftools.Permute(cef, []int{0, 4, 2, 3, 1, 5, 6, 7, 8, 9}, []int{4, 3, 0, 1, 2})
 		if err := ceftools.Write(cef, os.Stdout, false); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
@@ -203,13 +239,13 @@ func main() {
 
 	// Show info
 	case info.FullCommand():
-		var cef, err = ceftools.ReadFaster(os.Stdin, *app_bycol)
+		var cef, err = ceftools.Read(os.Stdin, *app_bycol)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			return
 		}
-		fmt.Fprintf(os.Stderr, "          Columns: %v\n", cef.NumColumns)
-		fmt.Fprintf(os.Stderr, "             Rows: %v\n", cef.NumRows)
+		fmt.Fprintf(os.Stderr, "          Columns: %v\n", cef.Columns)
+		fmt.Fprintf(os.Stderr, "             Rows: %v\n", cef.Rows)
 		fmt.Fprintf(os.Stderr, "            Flags: %v\n", cef.Flags)
 		fmt.Fprintln(os.Stderr, "          Headers:")
 		for i := 0; i < len(cef.Headers); i++ {

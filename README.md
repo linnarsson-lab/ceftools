@@ -24,6 +24,7 @@ text files that can be easily parsed and generated from any scripting language.
 	cef view			- interactively navigate the matrix
 	cef transpose 		- transpose the file
 	cef sort			- sort by row attribute or by specific column
+	cef sort --spin 	- sort rows by the SPIN algorithm
 	cef select			- select rows that match given criteria
 	cef join		  	- join two datasets by given attributes
 	cef add 			- add attribute or header with constant value 
@@ -151,6 +152,27 @@ Output:
 The output file is sorted by the first column, which has CellID '1772067057_G07', in descending order. You can verify this by doing `< oligos_sorted.cef cef view`.
 
 **Note:** when sorting by column, the "attr=X" clause must be put in double quotes (as above), or bash will interpret the equals sign as a variable assignment.
+
+
+### Sort (SPIN)
+
+Sort rows based on correlations using the [SPIN algorithm](http://bioinformatics.oxfordjournals.org/content/21/10/2301.full)
+
+Synopsis:
+
+	cef sort --spin 			Sort rows by SPIN
+
+	Options:
+
+		--corrfile "FILE"		Write the correlation matrix to the given file
+
+Example:
+
+	< oligos.cef cef sort --spin --corrfile oligos_spin_corrs.tab > oligos_spin_sorted.cef
+
+Output:
+
+The output file is sorted by correlation similarity, and the row correlation matrix is written to the indicated file in tab-delimited text format.
 
 
 ### Select
@@ -317,7 +339,7 @@ Output:
 
 Two new row attributes are added, named "Mean" and "Stdev". This makes it possible to sort by mean and standard deviation in the viewer.
 
-#### Calculating noise
+##### Calculating noise
 
 To calculate noise using the standard CV-vs-mean fit, you must pass a *method* parameter:
 
@@ -332,7 +354,7 @@ The following values are supported:
 
 The most reliable and well-tested method is `std`, but `bands` can sometimes give a better fit. In both cases, the fitting algorithms 
 have been tested only on data represented as absolute mRNA molecule counts per cell. If you have RPKM or TPM data, the fits may or may not 
-converge and may be completely off (let us know what you find!.
+converge and may be completely off (let us know what you find!).
 
 
 ### Import
