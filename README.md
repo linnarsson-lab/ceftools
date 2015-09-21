@@ -227,7 +227,7 @@ Synopsis:
 
 Example:
 
-	< oligos.cef cef --bycol add "File=oligos.cef" | cef view
+	< oligos.cef cef --bycol add --attr "File=oligos.cef" | cef view
 
 Output:
 
@@ -247,7 +247,7 @@ Synopsis:
 
 Example:
 
-	< oligos.cef cef drop --headers "Genome,Citation"
+	< oligos.cef cef drop --headers "Genome,Citation" | cef view
 
 Output:
 
