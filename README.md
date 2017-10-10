@@ -1,3 +1,6 @@
+
+**Note:** ceftools is no longer being maintained. Check out [Loom](http://github.com/linnarsson-lab/loompy), our high-performance file format for very large-scale omics datasets!
+
 # ceftools
 
 Tools for manipulating cell expression format (CEF) files.
